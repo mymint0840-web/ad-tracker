@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { SummaryGrid } from '@/components/dashboard/summary-grid';
 import { DateFilter } from '@/components/dashboard/date-filter';
@@ -15,6 +17,21 @@ import { useEntries, useProducts, useAccounts, useTargets } from '@/hooks/use-da
 import type { Entry } from '@/types';
 
 export function DashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  if (status === 'loading') {
+    return <div className="min-h-screen bg-[#0d0e1a] flex items-center justify-center"><div className="text-white/40">กำลังโหลด...</div></div>;
+  }
+  if (!session) {
+    router.push('/login');
+    return null;
+  }
+
+  return <DashboardContent />;
+}
+
+function DashboardContent() {
   const { entries, summary, addEntry, updateEntry, deleteEntry } = useEntries();
   const { products, addProduct, updateProduct, deleteProduct } = useProducts();
   const { accounts, addAccount, deleteAccount } = useAccounts();

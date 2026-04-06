@@ -1,7 +1,8 @@
 'use client';
 
+import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Target, Package, CreditCard, Settings } from 'lucide-react';
+import { Target, Package, CreditCard, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   onShowTargets: () => void;
@@ -10,13 +11,15 @@ interface HeaderProps {
 }
 
 export function Header({ onShowTargets, onShowProducts, onShowAccounts }: HeaderProps) {
+  const { data: session } = useSession();
+
   return (
     <header className="flex items-center justify-between mb-6">
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          Ad Performance Tracker
+          📊 Ad Performance Tracker
         </h1>
-        <p className="text-sm text-zinc-500 mt-0.5">ติดตามผลยิงแอด - วิเคราะห์ต้นทุน - คำนวณกำไร</p>
+        <p className="text-sm text-zinc-500 mt-0.5">ติดตามผลยิงแอด • วิเคราะห์ต้นทุน • คำนวณกำไร</p>
       </div>
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white gap-1.5" onClick={onShowTargets}>
@@ -31,6 +34,14 @@ export function Header({ onShowTargets, onShowProducts, onShowAccounts }: Header
           <CreditCard className="h-4 w-4" />
           บัญชี
         </Button>
+        {session && (
+          <>
+            <span className="text-xs text-zinc-500 ml-2">{session.user?.name}</span>
+            <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-red-400 gap-1" onClick={() => signOut({ callbackUrl: '/login' })}>
+              <LogOut className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        )}
       </div>
     </header>
   );
