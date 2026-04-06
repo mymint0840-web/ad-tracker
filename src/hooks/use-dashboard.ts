@@ -1,52 +1,57 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { mockEntries, mockProducts, mockAccounts, mockTargets, getMockSummary } from '@/lib/mock-data';
-import { calculateEntry } from '@/lib/calculations';
-import { useFilterStore } from '@/stores/filter-store';
-import type { Entry, Product, AdAccount, DailyTarget, EntryFormData } from '@/types';
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useFilterStore } from '@/stores/filter-store';
+import { entriesAPI, productsAPI, accountsAPI, targetsAPI, dashboardAPI } from '@/lib/api-client';
+import type { Entry, Product, AdAccount, DailyTarget, EntryFormData, DashboardSummary } from '@/types';
+
+// ═══ Entries ═══
 export function useEntries() {
-  const [entries, setEntries] = useState<Entry[]>(mockEntries);
+  const queryClient = useQueryClient();
   const { dateFilter, accountFilter, productFilter } = useFilterStore();
 
-  const filtered = useMemo(() => {
-    let r = entries;
-    if (dateFilter) r = r.filter(x => x.date === dateFilter);
-    if (accountFilter !== 'all') r = r.filter(x => String(x.accountId) === accountFilter);
-    if (productFilter !== 'all') r = r.filter(x => String(x.productId) === productFilter);
-    return r;
-  }, [entries, dateFilter, accountFilter, productFilter]);
+  const { data, isLoading } = useQuery({
+    queryKey: ['entries', dateFilter, accountFilter, productFilter],
+    queryFn: () => entriesAPI.list({ date: dateFilter, accountId: accountFilter, productId: productFilter }),
+  });
 
-  const summary = useMemo(() => {
-    return filtered.reduce((acc, r) => {
-      const prod = mockProducts.find(p => p.id === r.productId);
-      const c = calculateEntry({ ...r, productCost: prod?.cost || 0 });
-      return {
-        adCost: acc.adCost + r.adCost,
-        messages: acc.messages + r.messages,
-        closed: acc.closed + r.closed,
-        totalSales: acc.totalSales + c.totalSales,
-        salesPage: acc.salesPage + r.salesFromPage,
-        crmSales: acc.crmSales + r.crmSales,
-        crmQty: acc.crmQty + r.crmQty,
-        profitPage: acc.profitPage + c.profitPage,
-        profitCRM: acc.profitCRM + c.profitCRM,
-        profitTotal: acc.profitTotal + c.profitTotal,
-      };
-    }, { adCost: 0, messages: 0, closed: 0, totalSales: 0, salesPage: 0, crmSales: 0, crmQty: 0, profitPage: 0, profitCRM: 0, profitTotal: 0 });
-  }, [filtered]);
+  const { data: summaryData } = useQuery({
+    queryKey: ['dashboard-summary', dateFilter, accountFilter, productFilter],
+    queryFn: () => dashboardAPI.summary({ date: dateFilter, accountId: accountFilter, productId: productFilter }),
+  });
 
-  const addEntry = (data: EntryFormData) => {
-    const product = mockProducts.find(p => p.id === Number(data.productId));
-    const account = mockAccounts.find(a => a.id === Number(data.accountId));
-    if (!product || !account) return;
-    const newEntry: Entry = {
-      id: Date.now(),
-      ...data as any,
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['entries'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+  };
+
+  const addMutation = useMutation({
+    mutationFn: (formData: EntryFormData) => entriesAPI.create({
+      date: formData.date,
+      accountId: Number(formData.accountId),
+      productId: Number(formData.productId),
+      adCost: Number(formData.adCost) || 0,
+      messages: Number(formData.messages) || 0,
+      closed: Number(formData.closed) || 0,
+      orders: Number(formData.orders) || 0,
+      salesFromPage: Number(formData.salesFromPage) || 0,
+      quantity: Number(formData.quantity) || 0,
+      crmSales: Number(formData.crmSales) || 0,
+      crmQty: Number(formData.crmQty) || 0,
+      shippingCost: Number(formData.shippingCost) || 0,
+      packingCost: Number(formData.packingCost) || 0,
+      adminCommission: Number(formData.adminCommission) || 0,
+      note: formData.note || '',
+    }),
+    onSuccess: invalidate,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: EntryFormData }) => entriesAPI.update(id, {
+      date: data.date,
       accountId: Number(data.accountId),
       productId: Number(data.productId),
-      account,
-      product,
       adCost: Number(data.adCost) || 0,
       messages: Number(data.messages) || 0,
       closed: Number(data.closed) || 0,
@@ -58,38 +63,150 @@ export function useEntries() {
       shippingCost: Number(data.shippingCost) || 0,
       packingCost: Number(data.packingCost) || 0,
       adminCommission: Number(data.adminCommission) || 0,
-    };
-    setEntries(prev => [newEntry, ...prev]);
-  };
+      note: data.note || '',
+    }),
+    onSuccess: invalidate,
+  });
 
-  const updateEntry = (id: number, data: EntryFormData) => {
-    setEntries(prev => prev.map(e => e.id === id ? { ...e, ...data, accountId: Number(data.accountId), productId: Number(data.productId), adCost: Number(data.adCost) || 0, messages: Number(data.messages) || 0, closed: Number(data.closed) || 0, orders: Number(data.orders) || 0, salesFromPage: Number(data.salesFromPage) || 0, quantity: Number(data.quantity) || 0, crmSales: Number(data.crmSales) || 0, crmQty: Number(data.crmQty) || 0, shippingCost: Number(data.shippingCost) || 0, packingCost: Number(data.packingCost) || 0, adminCommission: Number(data.adminCommission) || 0 } as Entry : e));
-  };
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => entriesAPI.delete(id),
+    onSuccess: invalidate,
+  });
 
-  const deleteEntry = (id: number) => {
-    setEntries(prev => prev.filter(e => e.id !== id));
-  };
+  const entries: Entry[] = (data?.data || []).map((e: any) => ({
+    ...e,
+    adCost: Number(e.adCost) || 0,
+    messages: Number(e.messages) || 0,
+    closed: Number(e.closed) || 0,
+    orders: Number(e.orders) || 0,
+    salesFromPage: Number(e.salesFromPage) || 0,
+    quantity: Number(e.quantity) || 0,
+    crmSales: Number(e.crmSales) || 0,
+    crmQty: Number(e.crmQty) || 0,
+    shippingCost: Number(e.shippingCost) || 0,
+    packingCost: Number(e.packingCost) || 0,
+    adminCommission: Number(e.adminCommission) || 0,
+    product: e.product ? { ...e.product, cost: Number(e.product.cost), price: Number(e.product.price) } : e.product,
+  }));
 
-  return { entries: filtered, summary, addEntry, updateEntry, deleteEntry };
+  const summary: DashboardSummary = summaryData ? {
+    adCost: Number(summaryData.totals?.adCost) || 0,
+    messages: Number(summaryData.totals?.messages) || 0,
+    closed: Number(summaryData.totals?.closed) || 0,
+    totalSales: Number(summaryData.totals?.totalSales) || 0,
+    salesPage: Number(summaryData.totals?.salesPage) || 0,
+    crmSales: Number(summaryData.totals?.crmSales) || 0,
+    crmQty: Number(summaryData.totals?.crmQty) || 0,
+    profitPage: Number(summaryData.totals?.profitPage) || 0,
+    profitCRM: Number(summaryData.totals?.profitCRM) || 0,
+    profitTotal: Number(summaryData.totals?.profitTotal) || 0,
+  } : { adCost: 0, messages: 0, closed: 0, totalSales: 0, salesPage: 0, crmSales: 0, crmQty: 0, profitPage: 0, profitCRM: 0, profitTotal: 0 };
+
+  return {
+    entries,
+    summary,
+    isLoading,
+    addEntry: (data: EntryFormData) => addMutation.mutate(data),
+    updateEntry: (id: number, data: EntryFormData) => updateMutation.mutate({ id, data }),
+    deleteEntry: (id: number) => deleteMutation.mutate(id),
+  };
 }
 
+// ═══ Products ═══
 export function useProducts() {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const addProduct = (p: Omit<Product, 'id' | 'isActive'>) => setProducts(prev => [...prev, { ...p, id: Date.now(), isActive: true }]);
-  const updateProduct = (id: number, data: Partial<Product>) => setProducts(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
-  const deleteProduct = (id: number) => setProducts(prev => prev.filter(p => p.id !== id));
-  return { products, addProduct, updateProduct, deleteProduct };
+  const queryClient = useQueryClient();
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: productsAPI.list,
+  });
+
+  const mapped: Product[] = products.map((p: any) => ({
+    ...p,
+    cost: Number(p.cost),
+    price: Number(p.price),
+    stock: Number(p.stock),
+    isActive: true,
+  }));
+
+  const addMutation = useMutation({
+    mutationFn: (p: Omit<Product, 'id' | 'isActive'>) => productsAPI.create(p),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Product> }) => productsAPI.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => productsAPI.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+  });
+
+  return {
+    products: mapped,
+    addProduct: (p: Omit<Product, 'id' | 'isActive'>) => addMutation.mutate(p),
+    updateProduct: (id: number, data: Partial<Product>) => updateMutation.mutate({ id, data }),
+    deleteProduct: (id: number) => deleteMutation.mutate(id),
+  };
 }
 
+// ═══ Accounts ═══
 export function useAccounts() {
-  const [accounts, setAccounts] = useState<AdAccount[]>(mockAccounts);
-  const addAccount = (name: string) => setAccounts(prev => [...prev, { id: Date.now(), name, isActive: true }]);
-  const deleteAccount = (id: number) => setAccounts(prev => prev.filter(a => a.id !== id));
-  return { accounts, addAccount, deleteAccount };
+  const queryClient = useQueryClient();
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: accountsAPI.list,
+  });
+
+  const mapped: AdAccount[] = accounts.map((a: any) => ({ ...a, isActive: true }));
+
+  const addMutation = useMutation({
+    mutationFn: (name: string) => accountsAPI.create({ name }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => accountsAPI.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts'] }),
+  });
+
+  return {
+    accounts: mapped,
+    addAccount: (name: string) => addMutation.mutate(name),
+    deleteAccount: (id: number) => deleteMutation.mutate(id),
+  };
 }
 
+// ═══ Targets ═══
 export function useTargets() {
-  const [targets, setTargets] = useState<DailyTarget>(mockTargets);
-  const updateTargets = (data: Partial<DailyTarget>) => setTargets(prev => ({ ...prev, ...data }));
-  return { targets, updateTargets };
+  const queryClient = useQueryClient();
+
+  const { data } = useQuery({
+    queryKey: ['targets'],
+    queryFn: targetsAPI.get,
+  });
+
+  const targets: DailyTarget = data ? {
+    id: data.id || 0,
+    profit: Number(data.profit) || 0,
+    adPercent: Number(data.adPercent) || 0,
+    closeRate: Number(data.closeRate) || 0,
+    costPerClick: Number(data.costPerClick) || 0,
+  } : { id: 0, profit: 0, adPercent: 0, closeRate: 0, costPerClick: 0 };
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Partial<DailyTarget>) => targetsAPI.update(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['targets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+    },
+  });
+
+  return {
+    targets,
+    updateTargets: (data: Partial<DailyTarget>) => updateMutation.mutate(data),
+  };
 }

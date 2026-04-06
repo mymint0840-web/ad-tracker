@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_Thai, JetBrains_Mono } from "next/font/google";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 const noto = Noto_Sans_Thai({ subsets: ["thai", "latin"], variable: "--font-sans", weight: ["300", "400", "500", "600", "700", "800"] });
@@ -14,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th" className="dark">
       <body className={`${noto.variable} ${jetbrains.variable} font-sans`}>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
