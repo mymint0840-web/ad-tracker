@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { productSchema } from '@/lib/validators';
 import { decimalToNumber } from '@/lib/utils';
+import { getAuthUser } from '@/lib/auth';
 
 export async function GET() {
   const products = await prisma.product.findMany({
@@ -19,6 +20,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const body = await request.json();
   const parsed = productSchema.safeParse(body);
   if (!parsed.success) {

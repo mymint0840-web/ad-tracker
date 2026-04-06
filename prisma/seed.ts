@@ -19,6 +19,19 @@ async function main() {
     },
   });
 
+  // Test user
+  const testPassword = await bcrypt.hash('test123', 10);
+  const tester = await prisma.user.upsert({
+    where: { email: 'tester@adtracker.com' },
+    update: {},
+    create: {
+      name: 'Tester',
+      email: 'tester@adtracker.com',
+      password: testPassword,
+      role: 'STAFF',
+    },
+  });
+
   // Ad Accounts
   const accounts = await Promise.all(
     ['บัญชี A', 'บัญชี B', 'บัญชี C'].map(name =>
@@ -75,7 +88,7 @@ async function main() {
     });
   }
 
-  console.log('Seed completed: 1 admin, 3 accounts, 3 products, 1 target, 3 entries');
+  console.log('Seed completed: 1 admin, 1 tester, 3 accounts, 3 products, 1 target, 3 entries');
 }
 
 main()
