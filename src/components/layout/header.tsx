@@ -1,0 +1,37 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
+import { Target, Package, CreditCard, Settings } from 'lucide-react';
+
+interface HeaderProps {
+  onShowTargets: () => void;
+  onShowProducts: () => void;
+  onShowAccounts: () => void;
+}
+
+export function Header({ onShowTargets, onShowProducts, onShowAccounts }: HeaderProps) {
+  return (
+    <header className="flex items-center justify-between mb-6">
+      <div>
+        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          Ad Performance Tracker
+        </h1>
+        <p className="text-sm text-zinc-500 mt-0.5">ติดตามผลยิงแอด - วิเคราะห์ต้นทุน - คำนวณกำไร</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white gap-1.5" onClick={onShowTargets}>
+          <Target className="h-4 w-4" />
+          เป้าหมาย
+        </Button>
+        <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white gap-1.5" onClick={onShowProducts}>
+          <Package className="h-4 w-4" />
+          สินค้า
+        </Button>
+        <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white gap-1.5" onClick={onShowAccounts}>
+          <CreditCard className="h-4 w-4" />
+          บัญชี
+        </Button>
+      </div>
+    </header>
+  );
+}
