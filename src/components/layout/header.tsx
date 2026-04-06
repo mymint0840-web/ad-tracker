@@ -35,12 +35,16 @@ export function Header({ onShowTargets, onShowProducts, onShowAccounts }: Header
           บัญชี
         </Button>
         {session && (
-          <>
-            <span className="text-xs text-zinc-500 ml-2">{session.user?.name}</span>
-            <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-red-400 gap-1" onClick={() => signOut({ callbackUrl: '/login' })}>
+          <div className="flex items-center gap-2 ml-3 pl-3 border-l border-white/[0.08]">
+            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white">
+              {session.user?.name?.[0] || '?'}
+            </div>
+            <span className="text-sm text-zinc-300">{session.user?.name}</span>
+            <Button variant="outline" size="sm" className="text-red-400 border-red-400/30 hover:bg-red-400/10 hover:text-red-300 gap-1.5 ml-1" onClick={() => signOut({ callbackUrl: '/login' })}>
               <LogOut className="h-3.5 w-3.5" />
+              ออกจากระบบ
             </Button>
-          </>
+          </div>
         )}
       </div>
     </header>
