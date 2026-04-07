@@ -21,30 +21,33 @@ export function EntryTable({ entries, products, onEdit, onDelete }: EntryTablePr
         <table className="w-full text-sm whitespace-nowrap">
           <thead>
             <tr className="border-b border-white/[0.08]">
-              {['วันที่','บัญชี','สินค้า','ค่าแอด','คนทัก','ปิดได้','ออเดอร์','ยอดเพจ','ชิ้น','CRM','ชิ้นCRM','ค่าส่ง','ค่าแพ็ค','คอม','ยอดรวม','%แอด','%ปิด','ROAS','กำไร',''].map((h, i) => (
+              {['วันที่','บัญชี','เพจ','สินค้า','ค่าแอด','คนทัก','ปิดได้','ออเดอร์','ยอดเพจ','HOT','ชิ้น','CRM','CRM ออเดอร์','ชิ้นCRM','ค่าส่ง','ค่าแพ็ค','คอม','ยอดรวม','%แอด','%ปิด','ROAS','กำไร',''].map((h, i) => (
                 <th key={i} className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider pb-3 px-2">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {entries.length === 0 && (
-              <tr><td colSpan={20} className="text-center py-12 text-white/25 text-base">ยังไม่มีข้อมูล — กดเพิ่มข้อมูลใหม่</td></tr>
+              <tr><td colSpan={23} className="text-center py-12 text-white/25 text-base">ยังไม่มีข้อมูล — กดเพิ่มข้อมูลใหม่</td></tr>
             )}
             {entries.map(entry => {
               const prod = products.find(p => p.id === entry.productId);
-              const c = calculateEntry({ ...entry, productCost: prod?.cost || 0 });
+              const c = calculateEntry({ ...entry, salesHot: entry.salesHot ?? 0, crmOrders: entry.crmOrders ?? 0, productCost: prod?.cost || 0 });
               return (
                 <tr key={entry.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
                   <td className="py-2.5 px-2 text-white/70">{entry.date}</td>
                   <td className="py-2.5 px-2 text-white/70">{entry.account?.name || '-'}</td>
+                  <td className="py-2.5 px-2 text-white/70">{entry.page?.name || '-'}</td>
                   <td className="py-2.5 px-2 text-white font-medium">{entry.product?.name || '-'}</td>
                   <td className="py-2.5 px-2 text-amber-300 font-mono">{fmt(entry.adCost)}</td>
                   <td className="py-2.5 px-2 text-white/70 font-mono">{entry.messages}</td>
                   <td className="py-2.5 px-2 text-white/70 font-mono">{entry.closed}</td>
                   <td className="py-2.5 px-2 text-white/70 font-mono">{entry.orders}</td>
                   <td className="py-2.5 px-2 text-emerald-300 font-mono">{fmt(entry.salesFromPage)}</td>
+                  <td className="py-2.5 px-2 text-orange-300 font-mono">{fmt(entry.salesHot || 0)}</td>
                   <td className="py-2.5 px-2 text-white/70 font-mono">{entry.quantity}</td>
                   <td className="py-2.5 px-2 text-indigo-300 font-mono">{fmt(entry.crmSales)}</td>
+                  <td className="py-2.5 px-2 text-indigo-300/70 font-mono">{entry.crmOrders || 0}</td>
                   <td className="py-2.5 px-2 text-white/70 font-mono">{entry.crmQty}</td>
                   <td className="py-2.5 px-2 text-white/50 font-mono">{fmt(entry.shippingCost)}</td>
                   <td className="py-2.5 px-2 text-white/50 font-mono">{fmt(entry.packingCost)}</td>

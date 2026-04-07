@@ -2,22 +2,22 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useFilterStore } from '@/stores/filter-store';
-import { entriesAPI, productsAPI, accountsAPI, targetsAPI, dashboardAPI } from '@/lib/api-client';
-import type { Entry, Product, AdAccount, DailyTarget, EntryFormData, DashboardSummary } from '@/types';
+import { entriesAPI, productsAPI, accountsAPI, pagesAPI, targetsAPI, dashboardAPI } from '@/lib/api-client';
+import type { Entry, Product, AdAccount, Page, DailyTarget, EntryFormData, DashboardSummary } from '@/types';
 
 // ═══ Entries ═══
 export function useEntries() {
   const queryClient = useQueryClient();
-  const { dateFilter, accountFilter, productFilter } = useFilterStore();
+  const { dateFilter, accountFilter, productFilter, pageFilter } = useFilterStore();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['entries', dateFilter, accountFilter, productFilter],
-    queryFn: () => entriesAPI.list({ date: dateFilter, accountId: accountFilter, productId: productFilter }),
+    queryKey: ['entries', dateFilter, accountFilter, productFilter, pageFilter],
+    queryFn: () => entriesAPI.list({ date: dateFilter, accountId: accountFilter, productId: productFilter, pageId: pageFilter }),
   });
 
   const { data: summaryData } = useQuery({
-    queryKey: ['dashboard-summary', dateFilter, accountFilter, productFilter],
-    queryFn: () => dashboardAPI.summary({ date: dateFilter, accountId: accountFilter, productId: productFilter }),
+    queryKey: ['dashboard-summary', dateFilter, accountFilter, productFilter, pageFilter],
+    queryFn: () => dashboardAPI.summary({ date: dateFilter, accountId: accountFilter, productId: productFilter, pageId: pageFilter }),
   });
 
   const invalidate = () => {
@@ -42,6 +42,10 @@ export function useEntries() {
       shippingCost: Number(formData.shippingCost) || 0,
       packingCost: Number(formData.packingCost) || 0,
       adminCommission: Number(formData.adminCommission) || 0,
+      pageId: Number(formData.pageId) || undefined,
+      hotSales: Number(formData.salesHot) || 0,
+      crmOrders: Number(formData.crmOrders) || 0,
+      crmProductId: Number(formData.crmProductId) || undefined,
       note: formData.note || '',
     }),
     onSuccess: invalidate,
@@ -63,6 +67,10 @@ export function useEntries() {
       shippingCost: Number(data.shippingCost) || 0,
       packingCost: Number(data.packingCost) || 0,
       adminCommission: Number(data.adminCommission) || 0,
+      pageId: Number(data.pageId) || undefined,
+      hotSales: Number(data.salesHot) || 0,
+      crmOrders: Number(data.crmOrders) || 0,
+      crmProductId: Number(data.crmProductId) || undefined,
       note: data.note || '',
     }),
     onSuccess: invalidate,
@@ -86,6 +94,8 @@ export function useEntries() {
     shippingCost: Number(e.shippingCost) || 0,
     packingCost: Number(e.packingCost) || 0,
     adminCommission: Number(e.adminCommission) || 0,
+    salesHot: Number(e.hotSales || e.salesHot) || 0,
+    crmOrders: Number(e.crmOrders) || 0,
     product: e.product ? { ...e.product, cost: Number(e.product.cost), price: Number(e.product.price) } : e.product,
   }));
 
@@ -100,7 +110,8 @@ export function useEntries() {
     profitPage: Number(summaryData.totals?.profitPage) || 0,
     profitCRM: Number(summaryData.totals?.profitCRM) || 0,
     profitTotal: Number(summaryData.totals?.profitTotal) || 0,
-  } : { adCost: 0, messages: 0, closed: 0, totalSales: 0, salesPage: 0, crmSales: 0, crmQty: 0, profitPage: 0, profitCRM: 0, profitTotal: 0 };
+    salesHot: Number(summaryData.totals?.hotSales) || 0,
+  } : { adCost: 0, messages: 0, closed: 0, totalSales: 0, salesPage: 0, crmSales: 0, crmQty: 0, profitPage: 0, profitCRM: 0, profitTotal: 0, salesHot: 0 };
 
   return {
     entries,
@@ -178,6 +189,18 @@ export function useAccounts() {
     addAccount: (name: string) => addMutation.mutate(name),
     deleteAccount: (id: number) => deleteMutation.mutate(id),
   };
+}
+
+// ═══ Pages ═══
+export function usePages() {
+  const { data: pages = [] } = useQuery({
+    queryKey: ['pages'],
+    queryFn: pagesAPI.list,
+  });
+
+  const mapped: Page[] = pages.map((p: any) => ({ ...p, isActive: true }));
+
+  return { pages: mapped };
 }
 
 // ═══ Targets ═══

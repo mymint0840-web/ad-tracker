@@ -7,6 +7,18 @@ export interface Product {
   isActive: boolean;
 }
 
+export interface Page {
+  id: number;
+  name: string;
+  isActive: boolean;
+}
+
+export interface EntryProductItem {
+  productId: number;
+  product: Product;
+  quantity: number;
+}
+
 export interface AdAccount {
   id: number;
   name: string;
@@ -31,6 +43,13 @@ export interface Entry {
   shippingCost: number;
   packingCost: number;
   adminCommission: number;
+  pageId: number;
+  page: Page;
+  hotSales: number;
+  crmOrders: number;
+  crmProductId: number;
+  crmProduct?: Product;
+  products: EntryProductItem[];
   note?: string;
   // Calculated fields from API
   totalSales?: number;
@@ -58,6 +77,10 @@ export interface EntryFormData {
   shippingCost: number | '';
   packingCost: number | '';
   adminCommission: number | '';
+  pageId: number | '';
+  hotSales: number | '';
+  crmOrders: number | '';
+  crmProductId: number | '';
   note: string;
 }
 
@@ -80,10 +103,13 @@ export interface DashboardSummary {
   profitPage: number;
   profitCRM: number;
   profitTotal: number;
+  hotSales: number;
 }
 
 export interface CalcResult {
   totalSales: number;
+  totalSalesAll: number;
+  hotSales: number;
   totalSpend: number;
   revenue: number;
   profitPage: number;

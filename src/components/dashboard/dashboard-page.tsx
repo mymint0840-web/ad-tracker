@@ -13,7 +13,7 @@ import { ProductModal } from '@/components/entries/product-modal';
 import { AccountModal } from '@/components/entries/account-modal';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useEntries, useProducts, useAccounts, useTargets } from '@/hooks/use-dashboard';
+import { useEntries, useProducts, useAccounts, usePages, useTargets } from '@/hooks/use-dashboard';
 import type { Entry } from '@/types';
 
 export function DashboardPage() {
@@ -35,6 +35,7 @@ function DashboardContent() {
   const { entries, summary, addEntry, updateEntry, deleteEntry } = useEntries();
   const { products, addProduct, updateProduct, deleteProduct } = useProducts();
   const { accounts, addAccount, deleteAccount } = useAccounts();
+  const { pages } = usePages();
   const { targets, updateTargets } = useTargets();
 
   const [showEntryForm, setShowEntryForm] = useState(false);
@@ -52,7 +53,7 @@ function DashboardContent() {
         <Header onShowTargets={() => setShowTargets(true)} onShowProducts={() => setShowProducts(true)} onShowAccounts={() => setShowAccounts(true)} />
         <SummaryGrid summary={summary} targets={targets} />
         <div className="flex items-center justify-between mb-3">
-          <DateFilter accounts={accounts} products={products} />
+          <DateFilter accounts={accounts} products={products} pages={pages} />
           <Button onClick={handleNew} className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold gap-1.5">
             <Plus className="h-4 w-4" />
             เพิ่มข้อมูล
@@ -61,7 +62,7 @@ function DashboardContent() {
         <EntryTable entries={entries} products={products} onEdit={handleEdit} onDelete={deleteEntry} />
 
         {/* Modals */}
-        <EntryForm open={showEntryForm} onClose={() => { setShowEntryForm(false); setEditEntry(null); }} onSave={data => editEntry ? updateEntry(editEntry.id, data) : addEntry(data)} entry={editEntry} products={products} accounts={accounts} />
+        <EntryForm open={showEntryForm} onClose={() => { setShowEntryForm(false); setEditEntry(null); }} onSave={data => editEntry ? updateEntry(editEntry.id, data) : addEntry(data)} entry={editEntry} products={products} accounts={accounts} pages={pages} />
         <TargetModal open={showTargets} onClose={() => setShowTargets(false)} targets={targets} onSave={updateTargets} />
         <ProductModal open={showProducts} onClose={() => setShowProducts(false)} products={products} onAdd={addProduct} onUpdate={updateProduct} onDelete={deleteProduct} />
         <AccountModal open={showAccounts} onClose={() => setShowAccounts(false)} accounts={accounts} onAdd={addAccount} onDelete={deleteAccount} />

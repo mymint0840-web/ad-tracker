@@ -17,11 +17,12 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
 
 // Entries
 export const entriesAPI = {
-  list: (params?: { date?: string; accountId?: string; productId?: string }) => {
+  list: (params?: { date?: string; accountId?: string; productId?: string; pageId?: string }) => {
     const sp = new URLSearchParams();
     if (params?.date) sp.set('date', params.date);
     if (params?.accountId && params.accountId !== 'all') sp.set('accountId', params.accountId);
     if (params?.productId && params.productId !== 'all') sp.set('productId', params.productId);
+    if (params?.pageId && params.pageId !== 'all') sp.set('pageId', params.pageId);
     const qs = sp.toString();
     return fetchAPI<{ data: any[]; pagination: any }>(`/api/entries${qs ? `?${qs}` : ''}`);
   },
@@ -45,6 +46,11 @@ export const accountsAPI = {
   delete: (id: number) => fetchAPI<any>(`/api/accounts/${id}`, { method: 'DELETE' }),
 };
 
+// Pages
+export const pagesAPI = {
+  list: () => fetchAPI<any[]>('/api/pages'),
+};
+
 // Targets
 export const targetsAPI = {
   get: () => fetchAPI<any>('/api/targets'),
@@ -53,11 +59,12 @@ export const targetsAPI = {
 
 // Dashboard
 export const dashboardAPI = {
-  summary: (params?: { date?: string; accountId?: string; productId?: string }) => {
+  summary: (params?: { date?: string; accountId?: string; productId?: string; pageId?: string }) => {
     const sp = new URLSearchParams();
     if (params?.date) sp.set('date', params.date);
     if (params?.accountId && params.accountId !== 'all') sp.set('accountId', params.accountId);
     if (params?.productId && params.productId !== 'all') sp.set('productId', params.productId);
+    if (params?.pageId && params.pageId !== 'all') sp.set('pageId', params.pageId);
     const qs = sp.toString();
     return fetchAPI<{ totals: any; rates: any; targets: any }>(`/api/dashboard/summary${qs ? `?${qs}` : ''}`);
   },

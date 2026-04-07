@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { calculateEntry } from '@/lib/calculations';
 import { fmt, fmtP, fmtR } from '@/lib/utils';
-import type { Entry, Product, AdAccount, EntryFormData } from '@/types';
+import type { Entry, Product, AdAccount, Page, EntryFormData } from '@/types';
 
 interface EntryFormProps {
   open: boolean;
@@ -15,29 +15,30 @@ interface EntryFormProps {
   entry?: Entry | null;
   products: Product[];
   accounts: AdAccount[];
+  pages: Page[];
 }
 
 const emptyForm: EntryFormData = {
   date: new Date().toISOString().split('T')[0],
-  accountId: '', productId: '',
+  accountId: '', productId: '', pageId: '',
   adCost: '', messages: '', closed: '', orders: '',
-  salesFromPage: '', quantity: '',
-  crmSales: '', crmQty: '',
+  salesFromPage: '', salesHot: '', quantity: '',
+  crmSales: '', crmQty: '', crmOrders: '', crmProductId: '',
   shippingCost: '', packingCost: '', adminCommission: '',
   note: '',
 };
 
-export function EntryForm({ open, onClose, onSave, entry, products, accounts }: EntryFormProps) {
+export function EntryForm({ open, onClose, onSave, entry, products, accounts, pages }: EntryFormProps) {
   const [form, setForm] = useState<EntryFormData>(emptyForm);
   const isNew = !entry;
 
   useEffect(() => {
     if (entry) {
       setForm({
-        date: entry.date, accountId: entry.accountId, productId: entry.productId,
+        date: entry.date, accountId: entry.accountId, productId: entry.productId, pageId: entry.pageId || '',
         adCost: entry.adCost, messages: entry.messages, closed: entry.closed, orders: entry.orders,
-        salesFromPage: entry.salesFromPage, quantity: entry.quantity,
-        crmSales: entry.crmSales, crmQty: entry.crmQty,
+        salesFromPage: entry.salesFromPage, salesHot: entry.salesHot || '', quantity: entry.quantity,
+        crmSales: entry.crmSales, crmQty: entry.crmQty, crmOrders: entry.crmOrders || '', crmProductId: entry.crmProductId || '',
         shippingCost: entry.shippingCost, packingCost: entry.packingCost, adminCommission: entry.adminCommission,
         note: entry.note || '',
       });
@@ -53,6 +54,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts }: 
     adCost: Number(form.adCost) || 0, messages: Number(form.messages) || 0,
     closed: Number(form.closed) || 0, orders: Number(form.orders) || 0,
     salesFromPage: Number(form.salesFromPage) || 0, quantity: Number(form.quantity) || 0,
+    salesHot: Number(form.salesHot) || 0, crmOrders: Number(form.crmOrders) || 0,
     crmSales: Number(form.crmSales) || 0, crmQty: Number(form.crmQty) || 0,
     shippingCost: Number(form.shippingCost) || 0, packingCost: Number(form.packingCost) || 0,
     adminCommission: Number(form.adminCommission) || 0,
@@ -71,13 +73,20 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts }: 
 
         {/* Basic Info */}
         <Section title="ข้อมูลพื้นฐาน" color="rgba(129,140,248,0.8)">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <FormField label="วันที่" type="date" value={String(form.date)} onChange={set('date')} />
             <div className="space-y-1">
               <label className="text-[13px] text-white/50 font-semibold">บัญชียิงแอด</label>
               <select value={String(form.accountId)} onChange={set('accountId')} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none">
                 <option value="">เลือกบัญชี</option>
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[13px] text-white/50 font-semibold">เพจ</label>
+              <select value={String(form.pageId)} onChange={set('pageId')} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none">
+                <option value="">เลือกเพจ</option>
+                {pages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
           </div>
@@ -102,12 +111,21 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts }: 
 
         {/* Sales */}
         <Section title="ยอดขาย" color="rgba(52,211,153,0.8)">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <FormField label="ยอดขายเพจ (฿)" type="number" value={String(form.salesFromPage)} onChange={set('salesFromPage')} />
+            <FormField label="ยอดขาย HOT (฿)" type="number" value={String(form.salesHot)} onChange={set('salesHot')} />
             <FormField label="จำนวนชิ้น (เพจ)" type="number" value={String(form.quantity)} onChange={set('quantity')} />
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-4 gap-3 mt-3">
             <FormField label="ยอดขาย CRM (฿)" type="number" value={String(form.crmSales)} onChange={set('crmSales')} />
+            <FormField label="ออเดอร์ CRM" type="number" value={String(form.crmOrders)} onChange={set('crmOrders')} />
+            <div className="space-y-1">
+              <label className="text-[13px] text-white/50 font-semibold">สินค้า CRM</label>
+              <select value={String(form.crmProductId)} onChange={set('crmProductId')} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none">
+                <option value="">เลือกสินค้า</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
             <FormField label="จำนวนชิ้น (CRM)" type="number" value={String(form.crmQty)} onChange={set('crmQty')} />
           </div>
         </Section>
@@ -126,7 +144,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts }: 
           <div className="grid grid-cols-3 gap-3 bg-white/[0.02] rounded-2xl p-5 border border-white/[0.05]">
             {[
               { label: 'Total Spend', val: `${fmt(Number(form.adCost) || 0)} ฿`, color: '#fbbf24' },
-              { label: 'Revenue', val: `${fmt(calc.totalSales)} ฿`, color: '#34d399' },
+              { label: 'Revenue', val: `${fmt(calc.totalSales + (Number(form.salesHot) || 0))} ฿`, color: '#34d399' },
               { label: '%ค่าแอด', val: fmtP(calc.adPercent), color: '#fbbf24' },
               { label: '%ปิดการขาย', val: fmtP(calc.closeRate), color: '#818cf8' },
               { label: 'ค่าคลิก/ทัก', val: calc.costPerClick != null ? `${fmt(calc.costPerClick)} ฿` : '-', color: '#f472b6' },

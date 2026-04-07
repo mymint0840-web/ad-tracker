@@ -43,6 +43,17 @@ async function main() {
     )
   );
 
+  // Pages
+  const pages = await Promise.all(
+    ['เพจหลัก', 'เพจรอง'].map(name =>
+      prisma.page.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+      })
+    )
+  );
+
   // Products
   const products = [
     { name: 'เซรั่มหน้าใส', cost: 120, price: 590, stock: 200 },
@@ -74,9 +85,9 @@ async function main() {
 
   // Sample entries
   const entries = [
-    { date: new Date('2025-03-01'), accountId: accounts[0].id, productId: createdProducts[0].id, adCost: 5000, messages: 120, closed: 18, orders: 15, salesFromPage: 45000, quantity: 18, shippingCost: 900, packingCost: 360, adminCommission: 2250, crmSales: 12000, crmQty: 8 },
-    { date: new Date('2025-03-02'), accountId: accounts[1].id, productId: createdProducts[1].id, adCost: 3500, messages: 85, closed: 12, orders: 10, salesFromPage: 28000, quantity: 12, shippingCost: 600, packingCost: 240, adminCommission: 1400, crmSales: 8500, crmQty: 5 },
-    { date: new Date('2025-03-03'), accountId: accounts[0].id, productId: createdProducts[2].id, adCost: 4200, messages: 95, closed: 15, orders: 12, salesFromPage: 38000, quantity: 15, shippingCost: 750, packingCost: 300, adminCommission: 1900, crmSales: 0, crmQty: 0 },
+    { date: new Date('2025-03-01'), accountId: accounts[0].id, productId: createdProducts[0].id, pageId: pages[0].id, adCost: 5000, messages: 120, closed: 18, orders: 15, salesFromPage: 45000, quantity: 18, hotSales: 8000, crmOrders: 6, shippingCost: 900, packingCost: 360, adminCommission: 2250, crmSales: 12000, crmQty: 8 },
+    { date: new Date('2025-03-02'), accountId: accounts[1].id, productId: createdProducts[1].id, pageId: pages[1].id, adCost: 3500, messages: 85, closed: 12, orders: 10, salesFromPage: 28000, quantity: 12, hotSales: 4500, crmOrders: 4, shippingCost: 600, packingCost: 240, adminCommission: 1400, crmSales: 8500, crmQty: 5 },
+    { date: new Date('2025-03-03'), accountId: accounts[0].id, productId: createdProducts[2].id, pageId: pages[0].id, adCost: 4200, messages: 95, closed: 15, orders: 12, salesFromPage: 38000, quantity: 15, hotSales: 0, crmOrders: 0, shippingCost: 750, packingCost: 300, adminCommission: 1900, crmSales: 0, crmQty: 0 },
   ];
 
   for (const entry of entries) {
@@ -88,7 +99,7 @@ async function main() {
     });
   }
 
-  console.log('Seed completed: 1 admin, 1 tester, 3 accounts, 3 products, 1 target, 3 entries');
+  console.log('Seed completed: 1 admin, 1 tester, 3 accounts, 2 pages, 3 products, 1 target, 3 entries');
 }
 
 main()

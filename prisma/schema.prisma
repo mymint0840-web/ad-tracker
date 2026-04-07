@@ -35,17 +35,30 @@ model AdAccount {
   @@map("ad_accounts")
 }
 
-model Product {
+model Page {
   id        Int      @id @default(autoincrement())
-  name      String
-  cost      Decimal  @db.Decimal(12, 2)
-  price     Decimal  @db.Decimal(12, 2)
-  stock     Int      @default(0)
+  name      String   @unique
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   entries   Entry[]
-  stockLogs StockLog[]
+
+  @@map("pages")
+}
+
+model Product {
+  id            Int            @id @default(autoincrement())
+  name          String
+  cost          Decimal        @db.Decimal(12, 2)
+  price         Decimal        @db.Decimal(12, 2)
+  stock         Int            @default(0)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  entries       Entry[]
+  stockLogs     StockLog[]
+  entryProducts EntryProduct[] @relation("EntryProducts")
+  crmEntries    Entry[]        @relation("CrmProduct")
 
   @@map("products")
 }
@@ -61,6 +74,12 @@ model Entry {
   createdById     String
   createdBy       User      @relation(fields: [createdById], references: [id])
 
+  pageId          Int?
+  page            Page?     @relation(fields: [pageId], references: [id])
+
+  crmProductId    Int?
+  crmProduct      Product?  @relation("CrmProduct", fields: [crmProductId], references: [id])
+
   adCost          Decimal  @db.Decimal(12, 2)
   messages        Int      @default(0)
   closed          Int      @default(0)
@@ -69,6 +88,8 @@ model Entry {
   salesFromPage   Decimal  @db.Decimal(12, 2) @default(0)
   quantity        Int      @default(0)
 
+  hotSales        Decimal  @db.Decimal(12, 2) @default(0)
+  crmOrders       Int      @default(0)
   crmSales        Decimal  @db.Decimal(12, 2) @default(0)
   crmQty          Int      @default(0)
 
@@ -80,12 +101,29 @@ model Entry {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  entryProducts   EntryProduct[]
+
   @@index([date])
   @@index([accountId])
   @@index([productId])
+  @@index([pageId])
   @@index([date, accountId])
   @@index([date, productId])
   @@map("entries")
+}
+
+model EntryProduct {
+  id        Int      @id @default(autoincrement())
+  entryId   Int
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation("EntryProducts", fields: [productId], references: [id])
+  quantity  Int      @default(0)
+
+  @@unique([entryId, productId])
+  @@index([entryId])
+  @@index([productId])
+  @@map("entry_products")
 }
 
 model StockLog {
