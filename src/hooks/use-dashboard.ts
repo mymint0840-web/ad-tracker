@@ -43,7 +43,7 @@ export function useEntries() {
       packingCost: Number(formData.packingCost) || 0,
       adminCommission: Number(formData.adminCommission) || 0,
       pageId: Number(formData.pageId) || undefined,
-      hotSales: Number(formData.salesHot) || 0,
+      hotSales: Number(formData.hotSales) || 0,
       crmOrders: Number(formData.crmOrders) || 0,
       crmProductId: Number(formData.crmProductId) || undefined,
       note: formData.note || '',
@@ -68,7 +68,7 @@ export function useEntries() {
       packingCost: Number(data.packingCost) || 0,
       adminCommission: Number(data.adminCommission) || 0,
       pageId: Number(data.pageId) || undefined,
-      hotSales: Number(data.salesHot) || 0,
+      hotSales: Number(data.hotSales) || 0,
       crmOrders: Number(data.crmOrders) || 0,
       crmProductId: Number(data.crmProductId) || undefined,
       note: data.note || '',
@@ -94,7 +94,7 @@ export function useEntries() {
     shippingCost: Number(e.shippingCost) || 0,
     packingCost: Number(e.packingCost) || 0,
     adminCommission: Number(e.adminCommission) || 0,
-    salesHot: Number(e.hotSales || e.salesHot) || 0,
+    hotSales: Number(e.hotSales || e.hotSales) || 0,
     crmOrders: Number(e.crmOrders) || 0,
     product: e.product ? { ...e.product, cost: Number(e.product.cost), price: Number(e.product.price) } : e.product,
   }));
@@ -110,8 +110,8 @@ export function useEntries() {
     profitPage: Number(summaryData.totals?.profitPage) || 0,
     profitCRM: Number(summaryData.totals?.profitCRM) || 0,
     profitTotal: Number(summaryData.totals?.profitTotal) || 0,
-    salesHot: Number(summaryData.totals?.hotSales) || 0,
-  } : { adCost: 0, messages: 0, closed: 0, totalSales: 0, salesPage: 0, crmSales: 0, crmQty: 0, profitPage: 0, profitCRM: 0, profitTotal: 0, salesHot: 0 };
+    hotSales: Number(summaryData.totals?.hotSales) || 0,
+  } : { adCost: 0, messages: 0, closed: 0, totalSales: 0, salesPage: 0, crmSales: 0, crmQty: 0, profitPage: 0, profitCRM: 0, profitTotal: 0, hotSales: 0 };
 
   return {
     entries,

@@ -22,7 +22,7 @@ const emptyForm: EntryFormData = {
   date: new Date().toISOString().split('T')[0],
   accountId: '', productId: '', pageId: '',
   adCost: '', messages: '', closed: '', orders: '',
-  salesFromPage: '', salesHot: '', quantity: '',
+  salesFromPage: '', hotSales: '', quantity: '',
   crmSales: '', crmQty: '', crmOrders: '', crmProductId: '',
   shippingCost: '', packingCost: '', adminCommission: '',
   note: '',
@@ -37,7 +37,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
       setForm({
         date: entry.date, accountId: entry.accountId, productId: entry.productId, pageId: entry.pageId || '',
         adCost: entry.adCost, messages: entry.messages, closed: entry.closed, orders: entry.orders,
-        salesFromPage: entry.salesFromPage, salesHot: entry.salesHot || '', quantity: entry.quantity,
+        salesFromPage: entry.salesFromPage, hotSales: entry.hotSales || '', quantity: entry.quantity,
         crmSales: entry.crmSales, crmQty: entry.crmQty, crmOrders: entry.crmOrders || '', crmProductId: entry.crmProductId || '',
         shippingCost: entry.shippingCost, packingCost: entry.packingCost, adminCommission: entry.adminCommission,
         note: entry.note || '',
@@ -54,7 +54,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
     adCost: Number(form.adCost) || 0, messages: Number(form.messages) || 0,
     closed: Number(form.closed) || 0, orders: Number(form.orders) || 0,
     salesFromPage: Number(form.salesFromPage) || 0, quantity: Number(form.quantity) || 0,
-    salesHot: Number(form.salesHot) || 0, crmOrders: Number(form.crmOrders) || 0,
+    hotSales: Number(form.hotSales) || 0, crmOrders: Number(form.crmOrders) || 0,
     crmSales: Number(form.crmSales) || 0, crmQty: Number(form.crmQty) || 0,
     shippingCost: Number(form.shippingCost) || 0, packingCost: Number(form.packingCost) || 0,
     adminCommission: Number(form.adminCommission) || 0,
@@ -113,7 +113,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
         <Section title="ยอดขาย" color="rgba(52,211,153,0.8)">
           <div className="grid grid-cols-3 gap-3">
             <FormField label="ยอดขายเพจ (฿)" type="number" value={String(form.salesFromPage)} onChange={set('salesFromPage')} />
-            <FormField label="ยอดขาย HOT (฿)" type="number" value={String(form.salesHot)} onChange={set('salesHot')} />
+            <FormField label="ยอดขาย HOT (฿)" type="number" value={String(form.hotSales)} onChange={set('hotSales')} />
             <FormField label="จำนวนชิ้น (เพจ)" type="number" value={String(form.quantity)} onChange={set('quantity')} />
           </div>
           <div className="grid grid-cols-4 gap-3 mt-3">
@@ -144,7 +144,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
           <div className="grid grid-cols-3 gap-3 bg-white/[0.02] rounded-2xl p-5 border border-white/[0.05]">
             {[
               { label: 'Total Spend', val: `${fmt(Number(form.adCost) || 0)} ฿`, color: '#fbbf24' },
-              { label: 'Revenue', val: `${fmt(calc.totalSales + (Number(form.salesHot) || 0))} ฿`, color: '#34d399' },
+              { label: 'Revenue', val: `${fmt(calc.totalSales + (Number(form.hotSales) || 0))} ฿`, color: '#34d399' },
               { label: '%ค่าแอด', val: fmtP(calc.adPercent), color: '#fbbf24' },
               { label: '%ปิดการขาย', val: fmtP(calc.closeRate), color: '#818cf8' },
               { label: 'ค่าคลิก/ทัก', val: calc.costPerClick != null ? `${fmt(calc.costPerClick)} ฿` : '-', color: '#f472b6' },

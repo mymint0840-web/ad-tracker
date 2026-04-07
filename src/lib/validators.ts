@@ -11,7 +11,7 @@ export const entrySchema = z.object({
   orders: z.number().int().min(0),
   salesFromPage: z.number().min(0),
   quantity: z.number().int().min(0),
-  salesHot: z.number().min(0).default(0),
+  hotSales: z.number().min(0).default(0),
   crmOrders: z.number().int().min(0).default(0),
   crmProductId: z.number().int().positive().optional(),
   crmSales: z.number().min(0).default(0),

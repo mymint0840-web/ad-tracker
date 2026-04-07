@@ -13,17 +13,17 @@ interface EntryData {
   packingCost: number;
   adminCommission: number;
   productCost: number;
-  salesHot: number;
+  hotSales: number;
   crmOrders: number;
 }
 
 export function calculateEntry(data: EntryData): CalcResult {
-  const totalSales = data.salesFromPage + data.crmSales + data.salesHot;
+  const totalSales = data.salesFromPage + data.crmSales + data.hotSales;
   const totalSalesAll = totalSales;
   const totalSpend = data.adCost;
   const profitPage = data.salesFromPage - data.adminCommission - data.adCost - (data.productCost * data.quantity) - data.packingCost - data.shippingCost;
   const profitCRM = data.crmSales - (data.productCost * data.crmQty);
-  const profitHot = data.salesHot;
+  const profitHot = data.hotSales;
   const profitTotal = profitPage + profitCRM + profitHot;
   const adPercent = totalSales > 0 ? (data.adCost / totalSales) * 100 : null;
   const closeRate = data.messages > 0 ? (data.closed / data.messages) * 100 : null;
@@ -33,5 +33,5 @@ export function calculateEntry(data: EntryData): CalcResult {
   const aovCRM = data.crmQty > 0 ? data.crmSales / data.crmQty : null;
   const totalOrders = data.closed + data.crmQty;
   const aovTotal = totalOrders > 0 ? totalSales / totalOrders : null;
-  return { totalSales, totalSalesAll, salesHot: data.salesHot, totalSpend, revenue: totalSales, profitPage, profitCRM, profitTotal, adPercent, closeRate, costPerClick, roas, aovPage, aovCRM, aovTotal };
+  return { totalSales, totalSalesAll, hotSales: data.hotSales, totalSpend, revenue: totalSales, profitPage, profitCRM, profitTotal, adPercent, closeRate, costPerClick, roas, aovPage, aovCRM, aovTotal };
 }

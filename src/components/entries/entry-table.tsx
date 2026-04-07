@@ -32,7 +32,7 @@ export function EntryTable({ entries, products, onEdit, onDelete }: EntryTablePr
             )}
             {entries.map(entry => {
               const prod = products.find(p => p.id === entry.productId);
-              const c = calculateEntry({ ...entry, salesHot: entry.salesHot ?? 0, crmOrders: entry.crmOrders ?? 0, productCost: prod?.cost || 0 });
+              const c = calculateEntry({ ...entry, hotSales: entry.hotSales ?? 0, crmOrders: entry.crmOrders ?? 0, productCost: prod?.cost || 0 });
               return (
                 <tr key={entry.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
                   <td className="py-2.5 px-2 text-white/70">{entry.date}</td>
@@ -44,7 +44,7 @@ export function EntryTable({ entries, products, onEdit, onDelete }: EntryTablePr
                   <td className="py-2.5 px-2 text-white/70 font-mono">{entry.closed}</td>
                   <td className="py-2.5 px-2 text-white/70 font-mono">{entry.orders}</td>
                   <td className="py-2.5 px-2 text-emerald-300 font-mono">{fmt(entry.salesFromPage)}</td>
-                  <td className="py-2.5 px-2 text-orange-300 font-mono">{fmt(entry.salesHot || 0)}</td>
+                  <td className="py-2.5 px-2 text-orange-300 font-mono">{fmt(entry.hotSales || 0)}</td>
                   <td className="py-2.5 px-2 text-white/70 font-mono">{entry.quantity}</td>
                   <td className="py-2.5 px-2 text-indigo-300 font-mono">{fmt(entry.crmSales)}</td>
                   <td className="py-2.5 px-2 text-indigo-300/70 font-mono">{entry.crmOrders || 0}</td>
