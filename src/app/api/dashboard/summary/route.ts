@@ -5,6 +5,7 @@ import { calculateEntry } from '@/lib/calculations';
 import { decimalToNumber } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
+  try {
   const searchParams = request.nextUrl.searchParams;
   const where: any = {};
 
@@ -14,9 +15,9 @@ export async function GET(request: NextRequest) {
   const pageId = searchParams.get('pageId');
 
   if (date) where.date = new Date(date);
-  if (accountId) where.accountId = Number(accountId);
-  if (productId) where.productId = Number(productId);
-  if (pageId) where.pageId = Number(pageId);
+  if (accountId && !isNaN(Number(accountId))) where.accountId = Number(accountId);
+  if (productId && !isNaN(Number(productId))) where.productId = Number(productId);
+  if (pageId && !isNaN(Number(pageId))) where.pageId = Number(pageId);
 
   const entries = await prisma.entry.findMany({
     where,
@@ -92,4 +93,12 @@ export async function GET(request: NextRequest) {
       costPerClick: decimalToNumber(target.costPerClick),
     } : { profit: 0, adPercent: 0, closeRate: 0, costPerClick: 0 },
   });
+  } catch {
+    // Return empty summary instead of 500 when filter has no data or DB error
+    return NextResponse.json({
+      totals: { adCost: 0, messages: 0, closed: 0, orders: 0, salesPage: 0, crmSales: 0, totalSales: 0, crmQty: 0, hotSales: 0, profitPage: 0, profitCRM: 0, profitTotal: 0 },
+      rates: { adPercent: null, closeRate: null, costPerClick: null, roas: null, aovPage: null, aovCRM: null, aovTotal: null },
+      targets: { profit: 0, adPercent: 0, closeRate: 0, costPerClick: 0 },
+    });
+  }
 }

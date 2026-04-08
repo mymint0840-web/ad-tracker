@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   try {
   const searchParams = request.nextUrl.searchParams;
-  const filters = filterSchema.parse({
+  const filterResult = filterSchema.safeParse({
     date: searchParams.get('date') ?? undefined,
     accountId: searchParams.get('accountId') ?? undefined,
     productId: searchParams.get('productId') ?? undefined,
@@ -19,6 +19,10 @@ export async function GET(request: NextRequest) {
     page: searchParams.get('page') ?? 1,
     limit: searchParams.get('limit') ?? 50,
   });
+  if (!filterResult.success) {
+    return NextResponse.json({ data: [], pagination: { page: 1, limit: 50, total: 0 } });
+  }
+  const filters = filterResult.data;
 
   const where: any = {};
   if (filters.date) where.date = new Date(filters.date);
@@ -104,7 +108,8 @@ export async function GET(request: NextRequest) {
       message: 'Failed to fetch entries',
       error: err instanceof Error ? err.message : String(err),
     });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Return empty data instead of 500 when filter has no results or DB error
+    return NextResponse.json({ data: [], pagination: { page: 1, limit: 50, total: 0 } });
   }
 }
 
