@@ -11,6 +11,7 @@ import { EntryForm } from '@/components/entries/entry-form';
 import { TargetModal } from '@/components/entries/target-modal';
 import { ProductModal } from '@/components/entries/product-modal';
 import { AccountModal } from '@/components/entries/account-modal';
+import { PageModal } from '@/components/entries/page-modal';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useEntries, useProducts, useAccounts, usePages, useTargets } from '@/hooks/use-dashboard';
@@ -43,6 +44,7 @@ function DashboardContent() {
   const [showTargets, setShowTargets] = useState(false);
   const [showProducts, setShowProducts] = useState(false);
   const [showAccounts, setShowAccounts] = useState(false);
+  const [showPages, setShowPages] = useState(false);
 
   const handleEdit = (entry: Entry) => { setEditEntry(entry); setShowEntryForm(true); };
   const handleNew = () => { setEditEntry(null); setShowEntryForm(true); };
@@ -50,7 +52,7 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-[#0d0e1a] p-6 md:p-8">
       <div className="max-w-[1400px] mx-auto">
-        <Header onShowTargets={() => setShowTargets(true)} onShowProducts={() => setShowProducts(true)} onShowAccounts={() => setShowAccounts(true)} />
+        <Header onShowTargets={() => setShowTargets(true)} onShowProducts={() => setShowProducts(true)} onShowAccounts={() => setShowAccounts(true)} onShowPages={() => setShowPages(true)} />
         <SummaryGrid summary={summary} targets={targets} />
         <div className="flex items-center justify-between mb-3">
           <DateFilter accounts={accounts} products={products} pages={pages} />
@@ -66,6 +68,7 @@ function DashboardContent() {
         <TargetModal open={showTargets} onClose={() => setShowTargets(false)} targets={targets} onSave={updateTargets} />
         <ProductModal open={showProducts} onClose={() => setShowProducts(false)} products={products} onAdd={addProduct} onUpdate={updateProduct} onDelete={deleteProduct} />
         <AccountModal open={showAccounts} onClose={() => setShowAccounts(false)} accounts={accounts} onAdd={addAccount} onDelete={deleteAccount} />
+        <PageModal open={showPages} onClose={() => setShowPages(false)} pages={pages} onAdd={addPage} />
       </div>
     </div>
   );

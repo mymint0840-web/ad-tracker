@@ -2,15 +2,16 @@
 
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Target, Package, CreditCard, LogOut } from 'lucide-react';
+import { Target, Package, CreditCard, FileText, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   onShowTargets: () => void;
   onShowProducts: () => void;
   onShowAccounts: () => void;
+  onShowPages?: () => void;
 }
 
-export function Header({ onShowTargets, onShowProducts, onShowAccounts }: HeaderProps) {
+export function Header({ onShowTargets, onShowProducts, onShowAccounts, onShowPages }: HeaderProps) {
   const { data: session } = useSession();
 
   return (
@@ -34,6 +35,12 @@ export function Header({ onShowTargets, onShowProducts, onShowAccounts }: Header
           <CreditCard className="h-4 w-4" />
           บัญชี
         </Button>
+        {onShowPages && (
+          <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white gap-1.5" onClick={onShowPages}>
+            <FileText className="h-4 w-4" />
+            เพจ
+          </Button>
+        )}
         {session && (
           <div className="flex items-center gap-2 ml-3 pl-3 border-l border-white/[0.08]">
             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white">
