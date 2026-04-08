@@ -35,7 +35,7 @@ function DashboardContent() {
   const { entries, summary, addEntry, updateEntry, deleteEntry } = useEntries();
   const { products, addProduct, updateProduct, deleteProduct } = useProducts();
   const { accounts, addAccount, deleteAccount } = useAccounts();
-  const { pages } = usePages();
+  const { pages, addPage } = usePages();
   const { targets, updateTargets } = useTargets();
 
   const [showEntryForm, setShowEntryForm] = useState(false);
@@ -62,7 +62,7 @@ function DashboardContent() {
         <EntryTable entries={entries} products={products} onEdit={handleEdit} onDelete={deleteEntry} />
 
         {/* Modals */}
-        <EntryForm open={showEntryForm} onClose={() => { setShowEntryForm(false); setEditEntry(null); }} onSave={data => editEntry ? updateEntry(editEntry.id, data) : addEntry(data)} entry={editEntry} products={products} accounts={accounts} pages={pages} />
+        <EntryForm open={showEntryForm} onClose={() => { setShowEntryForm(false); setEditEntry(null); }} onSave={data => editEntry ? updateEntry(editEntry.id, data) : addEntry(data)} entry={editEntry} products={products} accounts={accounts} pages={pages} onAddPage={addPage} />
         <TargetModal open={showTargets} onClose={() => setShowTargets(false)} targets={targets} onSave={updateTargets} />
         <ProductModal open={showProducts} onClose={() => setShowProducts(false)} products={products} onAdd={addProduct} onUpdate={updateProduct} onDelete={deleteProduct} />
         <AccountModal open={showAccounts} onClose={() => setShowAccounts(false)} accounts={accounts} onAdd={addAccount} onDelete={deleteAccount} />

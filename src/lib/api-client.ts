@@ -49,6 +49,7 @@ export const accountsAPI = {
 // Pages
 export const pagesAPI = {
   list: () => fetchAPI<any[]>('/api/pages'),
+  create: (data: { name: string }) => fetchAPI<any>('/api/pages', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Targets

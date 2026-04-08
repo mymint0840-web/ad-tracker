@@ -193,6 +193,7 @@ export function useAccounts() {
 
 // ═══ Pages ═══
 export function usePages() {
+  const qc = useQueryClient();
   const { data: pages = [] } = useQuery({
     queryKey: ['pages'],
     queryFn: pagesAPI.list,
@@ -200,7 +201,12 @@ export function usePages() {
 
   const mapped: Page[] = pages.map((p: any) => ({ ...p, isActive: true }));
 
-  return { pages: mapped };
+  const { mutateAsync: addPage } = useMutation({
+    mutationFn: (name: string) => pagesAPI.create({ name }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pages'] }),
+  });
+
+  return { pages: mapped, addPage };
 }
 
 // ═══ Targets ═══

@@ -17,6 +17,7 @@ interface EntryFormProps {
   products: Product[];
   accounts: AdAccount[];
   pages: Page[];
+  onAddPage?: (name: string) => Promise<unknown>;
 }
 
 interface ProductRow {
@@ -103,7 +104,7 @@ const emptyForm: EntryFormData = {
   note: '',
 };
 
-export function EntryForm({ open, onClose, onSave, entry, products, accounts, pages }: EntryFormProps) {
+export function EntryForm({ open, onClose, onSave, entry, products, accounts, pages, onAddPage }: EntryFormProps) {
   const [form, setForm] = useState<EntryFormData>(emptyForm);
   const [adProducts, setAdProducts] = useState<ProductRow[]>([{ productId: '', quantity: '', sales: '' }]);
   const [crmProducts, setCrmProducts] = useState<ProductRow[]>([{ productId: '', quantity: '', sales: '' }]);
@@ -164,9 +165,19 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
     onClose();
   };
 
-  const accountOpts = [{ value: '', label: 'เลือกบัญชี' }, ...accounts.map(a => ({ value: String(a.id), label: a.name }))];
-  const pageOpts = [{ value: '', label: 'เลือกเพจ' }, ...pages.map(p => ({ value: String(p.id), label: p.name }))];
+  const [showAddPage, setShowAddPage] = useState(false);
+  const [newPageName, setNewPageName] = useState('');
+
+  const accountOpts = [{ value: 'all', label: 'ทั้งหมด' }, ...accounts.map(a => ({ value: String(a.id), label: a.name }))];
+  const pageOpts = [{ value: 'all', label: 'ทั้งหมด' }, ...pages.map(p => ({ value: String(p.id), label: p.name }))];
   const productOpts = [{ value: '', label: 'เลือกสินค้า' }, ...products.map(p => ({ value: String(p.id), label: p.name }))];
+
+  const handleAddPage = async () => {
+    if (!newPageName.trim() || !onAddPage) return;
+    await onAddPage(newPageName.trim());
+    setNewPageName('');
+    setShowAddPage(false);
+  };
 
   function updateProductRow(rows: ProductRow[], setRows: (r: ProductRow[]) => void, idx: number, key: keyof ProductRow, val: string) {
     const next = [...rows];
@@ -200,7 +211,28 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
               <FormSearchSelect value={String(form.accountId)} onChange={v => setForm(p => ({ ...p, accountId: v as EntryFormData['accountId'] }))} options={accountOpts} placeholder="เลือกบัญชี" />
             </div>
             <div className="space-y-1">
-              <label className="text-[13px] text-white/70 font-semibold">เพจ</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] text-white/70 font-semibold">เพจ</label>
+                {onAddPage && (
+                  <button type="button" onClick={() => setShowAddPage(!showAddPage)} className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-0.5">
+                    <Plus className="w-3 h-3" /> เพิ่มเพจ
+                  </button>
+                )}
+              </div>
+              {showAddPage && (
+                <div className="flex gap-1.5 mb-1">
+                  <input
+                    type="text"
+                    value={newPageName}
+                    onChange={e => setNewPageName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAddPage()}
+                    placeholder="ชื่อเพจใหม่"
+                    autoFocus
+                    className="flex-1 h-8 rounded-lg bg-white/[0.08] border border-indigo-500/30 text-sm text-white px-3 outline-none placeholder:text-white/40 focus:border-indigo-500/60"
+                  />
+                  <button type="button" onClick={handleAddPage} className="h-8 px-3 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs font-medium hover:bg-indigo-500/30 transition-colors">บันทึก</button>
+                </div>
+              )}
               <FormSearchSelect value={String(form.pageId)} onChange={v => setForm(p => ({ ...p, pageId: v as EntryFormData['pageId'] }))} options={pageOpts} placeholder="เลือกเพจ" />
             </div>
           </div>
