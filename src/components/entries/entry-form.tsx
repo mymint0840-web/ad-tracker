@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { calculateEntry } from '@/lib/calculations';
 import { fmt, fmtP, fmtR } from '@/lib/utils';
+import { Plus, Trash2, ChevronDown, Search } from 'lucide-react';
 import type { Entry, Product, AdAccount, Page, EntryFormData } from '@/types';
 
 interface EntryFormProps {
@@ -16,6 +17,80 @@ interface EntryFormProps {
   products: Product[];
   accounts: AdAccount[];
   pages: Page[];
+}
+
+interface ProductRow {
+  productId: number | '';
+  quantity: number | '';
+  sales: number | '';
+}
+
+// Searchable dropdown for use inside form
+function FormSearchSelect({ value, onChange, options, placeholder }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+  const selected = options.find(o => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => { setOpen(!open); setSearch(''); }}
+        className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none flex items-center gap-2 hover:bg-white/[0.08] transition-colors"
+      >
+        <span className="truncate flex-1 text-left text-white/90">{selected?.label || <span className="text-white/40">{placeholder}</span>}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-white/50 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 w-full min-w-[220px] bg-[#1a1b2e] border border-white/[0.12] rounded-lg shadow-2xl overflow-hidden">
+          <div className="p-2 border-b border-white/[0.08]">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="พิมพ์ค้นหา..."
+                autoFocus
+                className="w-full h-8 pl-8 pr-3 rounded-md bg-white/[0.08] border border-white/[0.1] text-sm text-white placeholder:text-white/40 outline-none focus:border-indigo-500/50"
+              />
+            </div>
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.map(o => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => { onChange(o.value); setOpen(false); }}
+                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                  o.value === value ? 'bg-indigo-500/20 text-indigo-300 font-medium' : 'text-white/80 hover:bg-white/[0.06] hover:text-white'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+            {filtered.length === 0 && <div className="px-3 py-3 text-center text-xs text-white/40">ไม่พบ</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const emptyForm: EntryFormData = {
@@ -30,6 +105,8 @@ const emptyForm: EntryFormData = {
 
 export function EntryForm({ open, onClose, onSave, entry, products, accounts, pages }: EntryFormProps) {
   const [form, setForm] = useState<EntryFormData>(emptyForm);
+  const [adProducts, setAdProducts] = useState<ProductRow[]>([{ productId: '', quantity: '', sales: '' }]);
+  const [crmProducts, setCrmProducts] = useState<ProductRow[]>([{ productId: '', quantity: '', sales: '' }]);
   const isNew = !entry;
 
   useEffect(() => {
@@ -42,33 +119,76 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
         shippingCost: entry.shippingCost, packingCost: entry.packingCost, adminCommission: entry.adminCommission,
         note: entry.note || '',
       });
+      setAdProducts([{ productId: entry.productId || '', quantity: entry.quantity || '', sales: entry.salesFromPage || '' }]);
+      setCrmProducts([{ productId: entry.crmProductId || '', quantity: entry.crmQty || '', sales: entry.crmSales || '' }]);
     } else {
       setForm(emptyForm);
+      setAdProducts([{ productId: '', quantity: '', sales: '' }]);
+      setCrmProducts([{ productId: '', quantity: '', sales: '' }]);
     }
   }, [entry, open]);
 
   const set = (key: keyof EntryFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm(p => ({ ...p, [key]: e.target.value }));
 
-  const prod = products.find(p => p.id === Number(form.productId));
+  // Sync first ad product row back to form for calculation
+  const mainProductId = adProducts[0]?.productId;
+  const prod = products.find(p => p.id === Number(mainProductId));
+  const totalAdSales = adProducts.reduce((s, r) => s + (Number(r.sales) || 0), 0);
+  const totalAdQty = adProducts.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+  const totalCrmSales = crmProducts.reduce((s, r) => s + (Number(r.sales) || 0), 0);
+  const totalCrmQty = crmProducts.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+
   const calc = calculateEntry({
     adCost: Number(form.adCost) || 0, messages: Number(form.messages) || 0,
     closed: Number(form.closed) || 0, orders: Number(form.orders) || 0,
-    salesFromPage: Number(form.salesFromPage) || 0, quantity: Number(form.quantity) || 0,
+    salesFromPage: totalAdSales, quantity: totalAdQty,
     hotSales: Number(form.hotSales) || 0, crmOrders: Number(form.crmOrders) || 0,
-    crmSales: Number(form.crmSales) || 0, crmQty: Number(form.crmQty) || 0,
+    crmSales: totalCrmSales, crmQty: totalCrmQty,
     shippingCost: Number(form.shippingCost) || 0, packingCost: Number(form.packingCost) || 0,
     adminCommission: Number(form.adminCommission) || 0,
     productCost: prod?.cost || 0,
   });
 
-  const handleSave = () => { onSave(form); onClose(); };
+  const handleSave = () => {
+    // Sync multi-product totals back to form
+    const data = {
+      ...form,
+      salesFromPage: totalAdSales || form.salesFromPage,
+      quantity: totalAdQty || form.quantity,
+      productId: adProducts[0]?.productId || form.productId,
+      crmSales: totalCrmSales || form.crmSales,
+      crmQty: totalCrmQty || form.crmQty,
+      crmProductId: crmProducts[0]?.productId || form.crmProductId,
+    };
+    onSave(data as EntryFormData);
+    onClose();
+  };
+
+  const accountOpts = [{ value: '', label: 'เลือกบัญชี' }, ...accounts.map(a => ({ value: String(a.id), label: a.name }))];
+  const pageOpts = [{ value: '', label: 'เลือกเพจ' }, ...pages.map(p => ({ value: String(p.id), label: p.name }))];
+  const productOpts = [{ value: '', label: 'เลือกสินค้า' }, ...products.map(p => ({ value: String(p.id), label: p.name }))];
+
+  function updateProductRow(rows: ProductRow[], setRows: (r: ProductRow[]) => void, idx: number, key: keyof ProductRow, val: string) {
+    const next = [...rows];
+    next[idx] = { ...next[idx], [key]: val };
+    setRows(next);
+  }
+
+  function addProductRow(rows: ProductRow[], setRows: (r: ProductRow[]) => void) {
+    setRows([...rows, { productId: '', quantity: '', sales: '' }]);
+  }
+
+  function removeProductRow(rows: ProductRow[], setRows: (r: ProductRow[]) => void, idx: number) {
+    if (rows.length <= 1) return;
+    setRows(rows.filter((_, i) => i !== idx));
+  }
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-[780px] max-h-[92vh] overflow-y-auto bg-gradient-to-br from-[#1a1b2e] to-[#131424] border-white/[0.08] text-white">
+      <DialogContent className="max-w-[820px] max-h-[92vh] overflow-y-auto bg-gradient-to-br from-[#1a1b2e] to-[#131424] border-white/[0.08] text-white">
         <DialogHeader>
-          <DialogTitle className="text-xl font-extrabold">{isNew ? '➕ เพิ่มข้อมูลใหม่' : '✏️ แก้ไขข้อมูล'}</DialogTitle>
-          <p className="text-sm text-white/50">กรอกข้อมูลด้านล่าง • คำนวณอัตโนมัติ</p>
+          <DialogTitle className="text-xl font-extrabold text-white">{isNew ? '➕ เพิ่มข้อมูลใหม่' : '✏️ แก้ไขข้อมูล'}</DialogTitle>
+          <p className="text-sm text-white/60">กรอกข้อมูลด้านล่าง • คำนวณอัตโนมัติ</p>
         </DialogHeader>
 
         {/* Basic Info */}
@@ -76,71 +196,113 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
           <div className="grid grid-cols-3 gap-3">
             <FormField label="วันที่" type="date" value={String(form.date)} onChange={set('date')} />
             <div className="space-y-1">
-              <label className="text-[13px] text-white/60 font-semibold">บัญชียิงแอด</label>
-              <select value={String(form.accountId)} onChange={set('accountId')} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none">
-                <option value="">เลือกบัญชี</option>
-                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+              <label className="text-[13px] text-white/70 font-semibold">บัญชียิงแอด</label>
+              <FormSearchSelect value={String(form.accountId)} onChange={v => setForm(p => ({ ...p, accountId: v as EntryFormData['accountId'] }))} options={accountOpts} placeholder="เลือกบัญชี" />
             </div>
             <div className="space-y-1">
-              <label className="text-[13px] text-white/60 font-semibold">เพจ</label>
-              <select value={String(form.pageId)} onChange={set('pageId')} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none">
-                <option value="">เลือกเพจ</option>
-                {pages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              <label className="text-[13px] text-white/70 font-semibold">เพจ</label>
+              <FormSearchSelect value={String(form.pageId)} onChange={v => setForm(p => ({ ...p, pageId: v as EntryFormData['pageId'] }))} options={pageOpts} placeholder="เลือกเพจ" />
             </div>
-          </div>
-          <div className="mt-3 space-y-1">
-            <label className="text-[13px] text-white/60 font-semibold">สินค้า</label>
-            <select value={String(form.productId)} onChange={set('productId')} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none">
-              <option value="">เลือกสินค้า</option>
-              {products.map(p => <option key={p.id} value={p.id}>{p.name} — ต้นทุน {p.cost}฿ / ขาย {p.price}฿ / สต๊อก {p.stock}</option>)}
-            </select>
           </div>
         </Section>
 
         {/* Ad Results */}
         <Section title="ผลการยิงแอด" color="rgba(251,191,36,0.8)">
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <FormField label="ค่าแอด (฿)" type="number" value={String(form.adCost)} onChange={set('adCost')} />
             <FormField label="คนทัก" type="number" value={String(form.messages)} onChange={set('messages')} />
             <FormField label="ปิดได้" type="number" value={String(form.closed)} onChange={set('closed')} />
-            <FormField label="ออเดอร์" type="number" value={String(form.orders)} onChange={set('orders')} />
           </div>
         </Section>
 
-        {/* Sales — ผลการยิงแอด */}
-        <Section title="ผลการยิงแอด" color="rgba(52,211,153,0.8)">
-          <div className="grid grid-cols-3 gap-3">
-            <FormField label="ยอดขาย (฿)" type="number" value={String(form.salesFromPage)} onChange={set('salesFromPage')} />
+        {/* Sales — ยอดขาย + multi-product */}
+        <Section title="ยอดขาย" color="rgba(52,211,153,0.8)">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <FormField label="ยอดขาย HOT (฿)" type="number" value={String(form.hotSales)} onChange={set('hotSales')} />
-            <FormField label="ออเดอร์" type="number" value={String(form.orders)} onChange={set('orders')} />
-          </div>
-          <div className="grid grid-cols-3 gap-3 mt-3">
             <FormField label="ออเดอร์ HOT" type="number" value={String(form.crmOrders)} onChange={set('crmOrders')} />
-            <div className="space-y-1">
-              <label className="text-[13px] text-white/60 font-semibold">เลือกสินค้า</label>
-              <select value={String(form.productId)} onChange={set('productId')} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none">
-                <option value="">เลือกสินค้า</option>
-                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+          </div>
+
+          {/* Multi-product rows */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[12px] text-white/60 font-semibold uppercase tracking-wider">สินค้า (กดเพิ่มได้)</label>
+              <button type="button" onClick={() => addProductRow(adProducts, setAdProducts)} className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                <Plus className="w-3.5 h-3.5" /> เพิ่มสินค้า
+              </button>
             </div>
-            <FormField label="จำนวนชิ้น" type="number" value={String(form.quantity)} onChange={set('quantity')} />
+            {adProducts.map((row, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_100px_120px_32px] gap-2 items-end">
+                <div className="space-y-1">
+                  {idx === 0 && <label className="text-[12px] text-white/60">เลือกสินค้า</label>}
+                  <FormSearchSelect
+                    value={String(row.productId)}
+                    onChange={v => updateProductRow(adProducts, setAdProducts, idx, 'productId', v)}
+                    options={productOpts}
+                    placeholder="เลือกสินค้า"
+                  />
+                </div>
+                <div className="space-y-1">
+                  {idx === 0 && <label className="text-[12px] text-white/60">จำนวนชิ้น</label>}
+                  <Input type="number" value={String(row.quantity)} onChange={e => updateProductRow(adProducts, setAdProducts, idx, 'quantity', e.target.value)} className="bg-white/[0.06] border-white/[0.1] text-white font-mono rounded-xl h-10" />
+                </div>
+                <div className="space-y-1">
+                  {idx === 0 && <label className="text-[12px] text-white/60">ยอดขาย (฿)</label>}
+                  <Input type="number" value={String(row.sales)} onChange={e => updateProductRow(adProducts, setAdProducts, idx, 'sales', e.target.value)} className="bg-white/[0.06] border-white/[0.1] text-white font-mono rounded-xl h-10" />
+                </div>
+                <div>
+                  {adProducts.length > 1 && (
+                    <button type="button" onClick={() => removeProductRow(adProducts, setAdProducts, idx)} className="h-10 w-8 flex items-center justify-center rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </Section>
 
         {/* CRM */}
         <Section title="ยอดขาย CRM" color="rgba(96,165,250,0.8)">
-          <div className="grid grid-cols-4 gap-3">
-            <FormField label="ยอดขาย CRM (฿)" type="number" value={String(form.crmSales)} onChange={set('crmSales')} />
-            <div className="space-y-1">
-              <label className="text-[13px] text-white/60 font-semibold">สินค้า CRM</label>
-              <select value={String(form.crmProductId)} onChange={set('crmProductId')} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none">
-                <option value="">เลือกสินค้า</option>
-                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <FormField label="ออเดอร์ CRM" type="number" value={String(form.crmOrders)} onChange={set('crmOrders')} />
+          </div>
+
+          {/* CRM Multi-product rows */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[12px] text-white/60 font-semibold uppercase tracking-wider">สินค้า CRM (กดเพิ่มได้)</label>
+              <button type="button" onClick={() => addProductRow(crmProducts, setCrmProducts)} className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                <Plus className="w-3.5 h-3.5" /> เพิ่มสินค้า
+              </button>
             </div>
-            <FormField label="จำนวนชิ้น CRM" type="number" value={String(form.crmQty)} onChange={set('crmQty')} />
+            {crmProducts.map((row, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_100px_120px_32px] gap-2 items-end">
+                <div className="space-y-1">
+                  {idx === 0 && <label className="text-[12px] text-white/60">เลือกสินค้า</label>}
+                  <FormSearchSelect
+                    value={String(row.productId)}
+                    onChange={v => updateProductRow(crmProducts, setCrmProducts, idx, 'productId', v)}
+                    options={productOpts}
+                    placeholder="เลือกสินค้า"
+                  />
+                </div>
+                <div className="space-y-1">
+                  {idx === 0 && <label className="text-[12px] text-white/60">จำนวนชิ้น</label>}
+                  <Input type="number" value={String(row.quantity)} onChange={e => updateProductRow(crmProducts, setCrmProducts, idx, 'quantity', e.target.value)} className="bg-white/[0.06] border-white/[0.1] text-white font-mono rounded-xl h-10" />
+                </div>
+                <div className="space-y-1">
+                  {idx === 0 && <label className="text-[12px] text-white/60">ยอดขาย (฿)</label>}
+                  <Input type="number" value={String(row.sales)} onChange={e => updateProductRow(crmProducts, setCrmProducts, idx, 'sales', e.target.value)} className="bg-white/[0.06] border-white/[0.1] text-white font-mono rounded-xl h-10" />
+                </div>
+                <div>
+                  {crmProducts.length > 1 && (
+                    <button type="button" onClick={() => removeProductRow(crmProducts, setCrmProducts, idx)} className="h-10 w-8 flex items-center justify-center rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </Section>
 
@@ -155,10 +317,10 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
 
         {/* Auto Calc */}
         <Section title="📊 คำนวณอัตโนมัติ" color="rgba(167,139,250,0.8)">
-          <div className="grid grid-cols-3 gap-3 bg-white/[0.02] rounded-2xl p-5 border border-white/[0.05]">
+          <div className="grid grid-cols-3 gap-3 bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]">
             {[
               { label: 'Total Spend', val: `${fmt(Number(form.adCost) || 0)} ฿`, color: '#fbbf24' },
-              { label: 'Revenue', val: `${fmt(calc.totalSales + (Number(form.hotSales) || 0))} ฿`, color: '#34d399' },
+              { label: 'Revenue', val: `${fmt(totalAdSales + (Number(form.hotSales) || 0))} ฿`, color: '#34d399' },
               { label: '%ค่าแอด', val: fmtP(calc.adPercent), color: '#fbbf24' },
               { label: '%ปิดการขาย', val: fmtP(calc.closeRate), color: '#818cf8' },
               { label: 'ค่าคลิก/ทัก', val: calc.costPerClick != null ? `${fmt(calc.costPerClick)} ฿` : '-', color: '#f472b6' },
@@ -176,7 +338,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
         </Section>
 
         <div className="flex gap-3 justify-end mt-2">
-          <Button variant="ghost" onClick={onClose} className="text-white/60">ยกเลิก</Button>
+          <Button variant="ghost" onClick={onClose} className="text-white/70">ยกเลิก</Button>
           <Button onClick={handleSave} className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold px-8">💾 บันทึก</Button>
         </div>
       </DialogContent>
@@ -196,7 +358,7 @@ function Section({ title, color, children }: { title: string; color: string; chi
 function FormField({ label, type = 'text', value, onChange }: { label: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <div className="space-y-1">
-      <label className="text-[13px] text-white/60 font-semibold">{label}</label>
+      <label className="text-[13px] text-white/70 font-semibold">{label}</label>
       <Input type={type} value={value} onChange={onChange} className="bg-white/[0.06] border-white/[0.1] text-white font-mono rounded-xl h-10" />
     </div>
   );
