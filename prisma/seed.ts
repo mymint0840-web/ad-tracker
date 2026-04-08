@@ -45,7 +45,7 @@ async function main() {
 
   // Pages
   const pages = await Promise.all(
-    ['เพจหลัก', 'เพจรอง'].map(name =>
+    ['เพจหลัก', 'เพจรอง', 'เพจโปรโมชั่น'].map(name =>
       prisma.page.upsert({
         where: { name },
         update: {},
@@ -99,7 +99,7 @@ async function main() {
     });
   }
 
-  console.log('Seed completed: 1 admin, 1 tester, 3 accounts, 2 pages, 3 products, 1 target, 3 entries');
+  console.log('Seed completed: 1 admin, 1 tester, 3 accounts, 3 pages, 3 products, 1 target, 3 entries');
 }
 
 main()
