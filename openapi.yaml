@@ -1,0 +1,707 @@
+openapi: 3.1.0
+info:
+  title: Ad Performance Tracker API
+  version: 2.0.0
+  description: |
+    Ad Performance Tracker — ระบบติดตามประสิทธิภาพโฆษณา
+    รองรับ multi-page, multi-product per entry, HOT sales, CRM fields
+  contact:
+    name: Backend Oracle
+servers:
+  - url: https://ad-tracker-kappa.vercel.app
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from /api/auth/test-token or NextAuth session
+
+  schemas:
+    # --- Core Models ---
+    Product:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        cost: { type: number }
+        price: { type: number }
+        stock: { type: integer }
+      required: [id, name, cost, price, stock]
+
+    Account:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+      required: [id, name]
+
+    Page:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+      required: [id, name]
+
+    EntryProduct:
+      type: object
+      properties:
+        productId: { type: integer }
+        quantity: { type: integer }
+        product:
+          $ref: '#/components/schemas/Product'
+      required: [productId, quantity]
+
+    CalculatedFields:
+      type: object
+      description: Business metrics คำนวณจาก entry data
+      properties:
+        totalSales: { type: number, description: "salesFromPage + crmSales + hotSales" }
+        totalSalesAll: { type: number }
+        hotSales: { type: number, description: "Pure revenue (ไม่มีต้นทุน)" }
+        totalSpend: { type: number }
+        revenue: { type: number }
+        profitPage: { type: number, description: "salesFromPage - adminCommission - adCost - (productCost * qty) - packingCost - shippingCost" }
+        profitCRM: { type: number, description: "crmSales - (productCost * crmQty)" }
+        profitTotal: { type: number, description: "profitPage + profitCRM + profitHot" }
+        adPercent: { type: number, nullable: true }
+        closeRate: { type: number, nullable: true }
+        costPerClick: { type: number, nullable: true }
+        roas: { type: number, nullable: true }
+        aovPage: { type: number, nullable: true }
+        aovCRM: { type: number, nullable: true }
+        aovTotal: { type: number, nullable: true }
+
+    Entry:
+      type: object
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date, example: "2026-04-07" }
+        account:
+          $ref: '#/components/schemas/Account'
+        product:
+          $ref: '#/components/schemas/Product'
+        page:
+          oneOf:
+            - $ref: '#/components/schemas/Page'
+            - type: "null"
+        crmProduct:
+          oneOf:
+            - $ref: '#/components/schemas/Product'
+            - type: "null"
+        entryProducts:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryProduct'
+        adCost: { type: number }
+        messages: { type: integer }
+        closed: { type: integer }
+        orders: { type: integer }
+        salesFromPage: { type: number }
+        quantity: { type: integer }
+        hotSales: { type: number }
+        crmOrders: { type: integer }
+        crmSales: { type: number }
+        crmQty: { type: integer }
+        shippingCost: { type: number }
+        packingCost: { type: number }
+        adminCommission: { type: number }
+        note: { type: string, nullable: true }
+        calculated:
+          $ref: '#/components/schemas/CalculatedFields'
+
+    # --- Request Bodies ---
+    EntryInput:
+      type: object
+      required: [date, accountId, productId, adCost, messages, closed, orders, salesFromPage, quantity]
+      properties:
+        date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$', example: "2026-04-07" }
+        accountId: { type: integer, minimum: 1 }
+        productId: { type: integer, minimum: 1 }
+        pageId: { type: integer, minimum: 1, description: "Optional — filter by page" }
+        adCost: { type: number, minimum: 0 }
+        messages: { type: integer, minimum: 0 }
+        closed: { type: integer, minimum: 0 }
+        orders: { type: integer, minimum: 0 }
+        salesFromPage: { type: number, minimum: 0 }
+        quantity: { type: integer, minimum: 0 }
+        hotSales: { type: number, minimum: 0, default: 0 }
+        crmOrders: { type: integer, minimum: 0, default: 0 }
+        crmProductId: { type: integer, minimum: 1 }
+        crmSales: { type: number, minimum: 0, default: 0 }
+        crmQty: { type: integer, minimum: 0, default: 0 }
+        shippingCost: { type: number, minimum: 0, default: 0 }
+        packingCost: { type: number, minimum: 0, default: 0 }
+        adminCommission: { type: number, minimum: 0, default: 0 }
+        products:
+          type: array
+          description: "Multi-product per entry (junction table)"
+          items:
+            type: object
+            required: [productId, quantity]
+            properties:
+              productId: { type: integer, minimum: 1 }
+              quantity: { type: integer, minimum: 0 }
+        note: { type: string }
+
+    ProductInput:
+      type: object
+      required: [name, cost, price, stock]
+      properties:
+        name: { type: string, minLength: 1 }
+        cost: { type: number, minimum: 0 }
+        price: { type: number, minimum: 0 }
+        stock: { type: integer, minimum: 0 }
+
+    AccountInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+
+    PageInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+
+    TargetInput:
+      type: object
+      required: [profit, adPercent, closeRate, costPerClick]
+      properties:
+        profit: { type: number, minimum: 0 }
+        adPercent: { type: number, minimum: 0, maximum: 100 }
+        closeRate: { type: number, minimum: 0, maximum: 100 }
+        costPerClick: { type: number, minimum: 0 }
+
+    # --- Responses ---
+    DashboardSummary:
+      type: object
+      properties:
+        totals:
+          type: object
+          properties:
+            adCost: { type: number }
+            messages: { type: integer }
+            closed: { type: integer }
+            orders: { type: integer }
+            salesPage: { type: number }
+            crmSales: { type: number }
+            totalSales: { type: number }
+            crmQty: { type: integer }
+            hotSales: { type: number }
+            profitPage: { type: number }
+            profitCRM: { type: number }
+            profitTotal: { type: number }
+        rates:
+          type: object
+          properties:
+            adPercent: { type: number, nullable: true }
+            closeRate: { type: number, nullable: true }
+            costPerClick: { type: number, nullable: true }
+            roas: { type: number, nullable: true }
+            aovPage: { type: number, nullable: true }
+            aovCRM: { type: number, nullable: true }
+            aovTotal: { type: number, nullable: true }
+        targets:
+          type: object
+          properties:
+            profit: { type: number }
+            adPercent: { type: number }
+            closeRate: { type: number }
+            costPerClick: { type: number }
+
+    Target:
+      type: object
+      properties:
+        id: { type: integer }
+        profit: { type: number }
+        adPercent: { type: number }
+        closeRate: { type: number }
+        costPerClick: { type: number }
+
+    AuthToken:
+      type: object
+      properties:
+        token: { type: string }
+        user:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            email: { type: string }
+            role: { type: string, enum: [ADMIN, STAFF] }
+        usage: { type: string }
+
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+    DeleteResponse:
+      type: object
+      properties:
+        message: { type: string, example: "Deleted" }
+
+    Pagination:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+
+paths:
+  # ===================== ENTRIES =====================
+  /api/entries:
+    get:
+      summary: List entries with filters
+      tags: [Entries]
+      parameters:
+        - name: date
+          in: query
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        - name: accountId
+          in: query
+          schema: { type: integer }
+        - name: productId
+          in: query
+          schema: { type: integer }
+        - name: pageId
+          in: query
+          schema: { type: integer }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200':
+          description: Paginated entries with calculated fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Entry'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create entry (with optional multi-product + stock deduction)
+      tags: [Entries]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryInput'
+      responses:
+        '201':
+          description: Created entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/entries/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+
+    get:
+      summary: Get single entry
+      tags: [Entries]
+      responses:
+        '200':
+          description: Entry with calculated fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update entry (recalculates stock)
+      tags: [Entries]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryInput'
+      responses:
+        '200':
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+
+    delete:
+      summary: Delete entry (restores stock)
+      tags: [Entries]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+
+  # ===================== PRODUCTS =====================
+  /api/products:
+    get:
+      summary: List active products
+      tags: [Products]
+      responses:
+        '200':
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+    post:
+      summary: Create product
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '201':
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          description: Unauthorized
+
+  /api/products/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+
+    put:
+      summary: Update product
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          description: Unauthorized
+
+    delete:
+      summary: Soft-delete product (isActive=false)
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          description: Unauthorized
+
+  # ===================== ACCOUNTS =====================
+  /api/accounts:
+    get:
+      summary: List active accounts
+      tags: [Accounts]
+      responses:
+        '200':
+          description: Account list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+
+    post:
+      summary: Create account
+      tags: [Accounts]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInput'
+      responses:
+        '201':
+          description: Created account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized
+
+  /api/accounts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+
+    put:
+      summary: Update account
+      tags: [Accounts]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInput'
+      responses:
+        '200':
+          description: Updated account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized
+
+    delete:
+      summary: Soft-delete account (isActive=false)
+      tags: [Accounts]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          description: Unauthorized
+
+  # ===================== PAGES =====================
+  /api/pages:
+    get:
+      summary: List active pages
+      tags: [Pages]
+      responses:
+        '200':
+          description: Page list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Page'
+
+    post:
+      summary: Create page
+      tags: [Pages]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageInput'
+      responses:
+        '201':
+          description: Created page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+        '401':
+          description: Unauthorized
+
+  /api/pages/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+
+    put:
+      summary: Update page
+      tags: [Pages]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageInput'
+      responses:
+        '200':
+          description: Updated page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+        '401':
+          description: Unauthorized
+
+    delete:
+      summary: Soft-delete page (isActive=false)
+      tags: [Pages]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          description: Unauthorized
+
+  # ===================== TARGETS =====================
+  /api/targets:
+    get:
+      summary: Get current daily targets
+      tags: [Targets]
+      responses:
+        '200':
+          description: Active target or defaults (all zeros)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Target'
+
+    put:
+      summary: Set daily targets
+      tags: [Targets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TargetInput'
+      responses:
+        '200':
+          description: Updated target
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Target'
+
+  # ===================== DASHBOARD =====================
+  /api/dashboard/summary:
+    get:
+      summary: Aggregated dashboard stats
+      tags: [Dashboard]
+      parameters:
+        - name: date
+          in: query
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        - name: accountId
+          in: query
+          schema: { type: integer }
+        - name: productId
+          in: query
+          schema: { type: integer }
+        - name: pageId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Summary with totals, rates, targets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+
+  # ===================== AUTH =====================
+  /api/auth/test-token:
+    post:
+      summary: Get JWT token for testing (rate limited 5/5min)
+      tags: [Auth]
+      description: |
+        Rate limited: 5 attempts per IP per 5 minutes.
+        For development/testing only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: JWT token + user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          description: Invalid credentials
+        '429':
+          description: Rate limit exceeded

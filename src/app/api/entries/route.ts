@@ -5,8 +5,11 @@ import { calculateEntry } from '@/lib/calculations';
 import { entrySchema, filterSchema } from '@/lib/validators';
 import { decimalToNumber } from '@/lib/utils';
 import { getAuthUser } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
+  try {
   const searchParams = request.nextUrl.searchParams;
   const filters = filterSchema.parse({
     date: searchParams.get('date') ?? undefined,
@@ -93,9 +96,21 @@ export async function GET(request: NextRequest) {
     data,
     pagination: { page: filters.page, limit: filters.limit, total },
   });
+  } catch (err) {
+    logger.error({
+      requestId,
+      method: 'GET',
+      path: '/api/entries',
+      message: 'Failed to fetch entries',
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
+  try {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -194,4 +209,14 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json(entry, { status: 201 });
+  } catch (err) {
+    logger.error({
+      requestId,
+      method: 'POST',
+      path: '/api/entries',
+      message: 'Failed to create entry',
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
