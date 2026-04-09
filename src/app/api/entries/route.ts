@@ -127,7 +127,9 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const parsed = entrySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Validation error' }, { status: 400 });
+    const issue = parsed.error.issues[0];
+    const field = issue?.path?.join('.') || 'unknown';
+    return NextResponse.json({ error: `${field}: ${issue?.message ?? 'Validation error'}`, field }, { status: 400 });
   }
 
   const data = parsed.data;
