@@ -46,6 +46,7 @@ export function useEntries() {
     crmOrders: Number(formData.crmOrders) || 0,
     crmProductId: Number(formData.crmProductId) || undefined,
     note: formData.note || '',
+    ...(formData.hotProducts?.length ? { hotProducts: formData.hotProducts } : {}),
     ...(formData.crmProducts?.length ? { crmProducts: formData.crmProducts } : {}),
   });
 

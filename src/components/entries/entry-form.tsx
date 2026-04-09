@@ -107,6 +107,7 @@ const emptyForm: EntryFormData = {
 export function EntryForm({ open, onClose, onSave, entry, products, accounts, pages, onAddPage }: EntryFormProps) {
   const [form, setForm] = useState<EntryFormData>(emptyForm);
   const [adProducts, setAdProducts] = useState<ProductRow[]>([{ productId: '', quantity: '' }]);
+  const [hotProducts, setHotProducts] = useState<ProductRow[]>([{ productId: '', quantity: '' }]);
   const [crmProducts, setCrmProducts] = useState<ProductRow[]>([{ productId: '', quantity: '' }]);
   const isNew = !entry;
 
@@ -130,9 +131,15 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
         ? (entry as any).crmProducts.map((p: any) => ({ productId: p.productId || '', quantity: p.quantity || '' }))
         : [{ productId: entry.crmProductId || '', quantity: entry.crmQty || '' }];
       setCrmProducts(crmRows);
+
+      const hotRows = (entry as any).hotProducts?.length
+        ? (entry as any).hotProducts.map((p: any) => ({ productId: p.productId || '', quantity: p.quantity || '' }))
+        : [{ productId: '', quantity: '' }];
+      setHotProducts(hotRows);
     } else {
       setForm(emptyForm);
       setAdProducts([{ productId: '', quantity: '' }]);
+      setHotProducts([{ productId: '', quantity: '' }]);
       setCrmProducts([{ productId: '', quantity: '' }]);
     }
   }, [entry, open]);
@@ -170,6 +177,9 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
     const validAdProducts = adProducts
       .filter(r => r.productId && r.quantity)
       .map(r => ({ productId: Number(r.productId), quantity: Number(r.quantity) }));
+    const validHotProducts = hotProducts
+      .filter(r => r.productId && r.quantity)
+      .map(r => ({ productId: Number(r.productId), quantity: Number(r.quantity) }));
     const validCrmProducts = crmProducts
       .filter(r => r.productId && r.quantity)
       .map(r => ({ productId: Number(r.productId), quantity: Number(r.quantity) }));
@@ -181,6 +191,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
       crmQty: totalCrmQty || form.crmQty,
       crmProductId: crmProducts[0]?.productId || form.crmProductId,
       adProducts: validAdProducts,
+      hotProducts: validHotProducts,
       crmProducts: validCrmProducts,
     };
     onSave(data as EntryFormData);
@@ -311,9 +322,43 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
 
         {/* ยอดขาย HOT */}
         <Section title="ยอดขาย HOT" color="rgba(251,146,60,0.8)">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <FormField label="ยอดขาย HOT (฿)" type="number" value={String(form.hotSales)} onChange={set('hotSales')} />
             <FormField label="ออเดอร์ HOT" type="number" value={String(form.orders)} onChange={set('orders')} />
+          </div>
+
+          {/* สินค้า HOT multi-product */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[12px] text-white/60 font-semibold uppercase tracking-wider">สินค้า HOT (กดเพิ่มได้)</label>
+              <button type="button" onClick={() => addProductRow(hotProducts, setHotProducts)} className="flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 transition-colors">
+                <Plus className="w-3.5 h-3.5" /> เพิ่มสินค้า
+              </button>
+            </div>
+            {hotProducts.map((row, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_120px_32px] gap-2 items-end">
+                <div className="space-y-1">
+                  {idx === 0 && <label className="text-[12px] text-white/60">เลือกสินค้า</label>}
+                  <FormSearchSelect
+                    value={String(row.productId)}
+                    onChange={v => updateProductRow(hotProducts, setHotProducts, idx, 'productId', v)}
+                    options={productOpts}
+                    placeholder="เลือกสินค้า"
+                  />
+                </div>
+                <div className="space-y-1">
+                  {idx === 0 && <label className="text-[12px] text-white/60">จำนวนชิ้น</label>}
+                  <Input type="number" value={String(row.quantity)} onChange={e => updateProductRow(hotProducts, setHotProducts, idx, 'quantity', e.target.value)} placeholder="0" className="bg-white/[0.06] border-white/[0.1] text-white font-mono rounded-xl h-10" />
+                </div>
+                <div>
+                  {hotProducts.length > 1 && (
+                    <button type="button" onClick={() => removeProductRow(hotProducts, setHotProducts, idx)} className="h-10 w-8 flex items-center justify-center rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </Section>
 
