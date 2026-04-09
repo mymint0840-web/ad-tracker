@@ -318,10 +318,9 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
 
         {/* ผลการยิงแอด */}
         <Section title="ผลการยิงแอด" color="rgba(251,191,36,0.8)">
-          <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <FormField label="ค่าแอด (฿)" type="number" value={String(form.adCost)} onChange={set('adCost')} />
             <FormField label="คนทัก" type="number" value={String(form.messages)} onChange={set('messages')} />
-            <FormField label="ปิดได้" type="number" value={String(form.closed)} onChange={set('closed')} />
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <FormField label="ยอดขาย (฿)" type="number" value={String(form.salesFromPage)} onChange={set('salesFromPage')} />
