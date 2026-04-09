@@ -78,7 +78,7 @@ export function useEntries() {
     shippingCost: Number(e.shippingCost) || 0,
     packingCost: Number(e.packingCost) || 0,
     adminCommission: Number(e.adminCommission) || 0,
-    hotSales: Number(e.hotSales || e.hotSales) || 0,
+    hotSales: Number(e.hotSales) || 0,
     crmOrders: Number(e.crmOrders) || 0,
     product: e.product ? { ...e.product, cost: Number(e.product.cost), price: Number(e.product.price) } : e.product,
     products: e.entryProducts || e.products || [],

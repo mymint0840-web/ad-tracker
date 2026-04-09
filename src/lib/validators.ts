@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 export const entrySchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  accountId: z.number().int().positive(),
-  productId: z.number().int().positive(),
-  pageId: z.number().int().positive().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'รูปแบบวันที่ต้องเป็น YYYY-MM-DD'),
+  accountId: z.number({ error: 'กรุณาเลือกบัญชีโฆษณา' }).int().positive('accountId ต้องมากกว่า 0'),
+  productId: z.number({ error: 'กรุณาเลือกสินค้า' }).int().positive('productId ต้องมากกว่า 0'),
+  pageId: z.number().int().positive('pageId ต้องมากกว่า 0').optional(),
   adCost: z.number().min(0),
   messages: z.number().int().min(0),
   closed: z.number().int().min(0),
@@ -13,7 +13,7 @@ export const entrySchema = z.object({
   quantity: z.number().int().min(0),
   hotSales: z.number().min(0).default(0),
   crmOrders: z.number().int().min(0).default(0),
-  crmProductId: z.number().int().positive().optional(),
+  crmProductId: z.number().int().positive('crmProductId ต้องมากกว่า 0').optional(),
   crmSales: z.number().min(0).default(0),
   crmQty: z.number().int().min(0).default(0),
   shippingCost: z.number().min(0).default(0),

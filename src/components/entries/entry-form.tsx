@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,7 @@ interface ProductRow {
   quantity: number | '';
 }
 
-// Searchable dropdown
+// Searchable dropdown — uses fixed positioning + portal to escape Dialog overflow clipping
 function FormSearchSelect({ value, onChange, options, placeholder }: {
   value: string;
   onChange: (v: string) => void;
@@ -35,22 +36,36 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  const updatePos = useCallback(() => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+  }, []);
 
   useEffect(() => {
+    if (!open) return;
+    updatePos();
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target) || dropRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [open, updatePos]);
 
   const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
   const selected = options.find(o => o.value === value);
 
   return (
-    <div ref={ref} className="relative">
+    <div>
       <button
+        ref={btnRef}
         type="button"
         onClick={() => { setOpen(!open); setSearch(''); }}
         className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm px-4 outline-none flex items-center gap-2 hover:bg-white/[0.08] transition-colors"
@@ -58,8 +73,12 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
         <span className="truncate flex-1 text-left text-white/90">{selected?.label || <span className="text-white/40">{placeholder}</span>}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-white/50 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 w-full min-w-[220px] bg-[#1a1b2e] border border-white/[0.12] rounded-lg shadow-2xl overflow-hidden">
+      {open && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed bg-[#1a1b2e] border border-white/[0.12] rounded-lg shadow-2xl overflow-hidden"
+          style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 220), zIndex: 9999 }}
+        >
           <div className="p-2 border-b border-white/[0.08]">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
@@ -88,7 +107,8 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
             ))}
             {filtered.length === 0 && <div className="px-3 py-3 text-center text-xs text-white/40">ไม่พบ</div>}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
