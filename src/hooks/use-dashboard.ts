@@ -103,8 +103,8 @@ export function useEntries() {
     entries,
     summary,
     isLoading,
-    addEntry: (data: EntryFormData) => addMutation.mutate(data),
-    updateEntry: (id: number, data: EntryFormData) => updateMutation.mutate({ id, data }),
+    addEntry: (data: EntryFormData) => addMutation.mutateAsync(data),
+    updateEntry: (id: number, data: EntryFormData) => updateMutation.mutateAsync({ id, data }),
     deleteEntry: (id: number) => deleteMutation.mutate(id),
   };
 }

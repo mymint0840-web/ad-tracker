@@ -14,7 +14,7 @@ import type { Entry, Product, AdAccount, Page, EntryFormData } from '@/types';
 interface EntryFormProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: EntryFormData) => void;
+  onSave: (data: EntryFormData) => Promise<void>;
   entry?: Entry | null;
   products: Product[];
   accounts: AdAccount[];
@@ -129,6 +129,8 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
   const [adProducts, setAdProducts] = useState<ProductRow[]>([{ productId: '', quantity: '' }]);
   const [hotProducts, setHotProducts] = useState<ProductRow[]>([{ productId: '', quantity: '' }]);
   const [crmProducts, setCrmProducts] = useState<ProductRow[]>([{ productId: '', quantity: '' }]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isNew = !entry;
 
   useEffect(() => {
@@ -193,7 +195,19 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
     productCost: prod?.cost || 0,
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setError(null);
+
+    // Validate required fields
+    if (!form.accountId || String(form.accountId) === 'all') {
+      setError('กรุณาเลือกบัญชียิงแอด');
+      return;
+    }
+    if (!adProducts[0]?.productId) {
+      setError('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ');
+      return;
+    }
+
     const validAdProducts = adProducts
       .filter(r => r.productId && r.quantity)
       .map(r => ({ productId: Number(r.productId), quantity: Number(r.quantity) }));
@@ -214,8 +228,16 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
       hotProducts: validHotProducts,
       crmProducts: validCrmProducts,
     };
-    onSave(data as EntryFormData);
-    onClose();
+
+    setSaving(true);
+    try {
+      await onSave(data as EntryFormData);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ — กรุณาลองใหม่');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const [showAddPage, setShowAddPage] = useState(false);
@@ -456,9 +478,19 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
           </div>
         </Section>
 
+        {/* Error toast */}
+        {error && (
+          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
+            <span className="shrink-0 mt-0.5">⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
         <div className="flex gap-3 justify-end mt-2">
-          <Button variant="ghost" onClick={onClose} className="text-white/70">ยกเลิก</Button>
-          <Button onClick={handleSave} className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold px-8">💾 บันทึก</Button>
+          <Button variant="ghost" onClick={onClose} disabled={saving} className="text-white/70">ยกเลิก</Button>
+          <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold px-8 disabled:opacity-50">
+            {saving ? '⏳ กำลังบันทึก...' : '💾 บันทึก'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
