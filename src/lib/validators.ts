@@ -20,6 +20,7 @@ export const entrySchema = z.object({
   packingCost: z.number().min(0).default(0),
   adminCommission: z.number().min(0).default(0),
   products: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().min(0) })).optional(),
+  crmProducts: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().min(0) })).optional(),
   note: z.string().optional(),
 });
 

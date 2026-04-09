@@ -73,7 +73,12 @@ export async function GET(request: NextRequest) {
       product: { id: entry.product.id, name: entry.product.name, cost: productCost },
       page: entry.page,
       crmProduct: entry.crmProduct ? { id: entry.crmProduct.id, name: entry.crmProduct.name, cost: decimalToNumber(entry.crmProduct.cost) } : null,
-      entryProducts: entry.entryProducts.map(ep => ({
+      entryProducts: entry.entryProducts.filter(ep => ep.type === 'PAGE').map(ep => ({
+        productId: ep.productId,
+        quantity: ep.quantity,
+        product: { id: ep.product.id, name: ep.product.name, cost: decimalToNumber(ep.product.cost) },
+      })),
+      crmProducts: entry.entryProducts.filter(ep => ep.type === 'CRM').map(ep => ({
         productId: ep.productId,
         quantity: ep.quantity,
         product: { id: ep.product.id, name: ep.product.name, cost: decimalToNumber(ep.product.cost) },
@@ -170,17 +175,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create EntryProduct records if products array provided
+    // Create PAGE EntryProduct records if products array provided
     if (data.products && data.products.length > 0) {
       await tx.entryProduct.createMany({
         data: data.products.map(p => ({
           entryId: created.id,
           productId: p.productId,
           quantity: p.quantity,
+          type: 'PAGE' as const,
         })),
       });
 
-      // Deduct stock for each entryProduct
+      // Deduct stock for each PAGE entryProduct
       for (const p of data.products) {
         if (p.quantity > 0) {
           await tx.product.update({
@@ -193,7 +199,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } else {
-      // Fallback: deduct primary product stock
+      // Fallback: deduct primary product stock (PAGE side)
       await tx.product.update({
         where: { id: data.productId },
         data: { stock: { decrement: primaryDeduct } },
@@ -203,10 +209,35 @@ export async function POST(request: NextRequest) {
           data: { productId: data.productId, change: -data.quantity, reason: 'SALE_PAGE', entryId: created.id },
         });
       }
-      if (data.crmQty > 0) {
+      if (data.crmQty > 0 && !(data.crmProducts && data.crmProducts.length > 0)) {
         await tx.stockLog.create({
           data: { productId: data.productId, change: -data.crmQty, reason: 'SALE_CRM', entryId: created.id },
         });
+      }
+    }
+
+    // Create CRM EntryProduct records if crmProducts array provided
+    if (data.crmProducts && data.crmProducts.length > 0) {
+      await tx.entryProduct.createMany({
+        data: data.crmProducts.map(p => ({
+          entryId: created.id,
+          productId: p.productId,
+          quantity: p.quantity,
+          type: 'CRM' as const,
+        })),
+      });
+
+      // Deduct stock for each CRM entryProduct
+      for (const p of data.crmProducts) {
+        if (p.quantity > 0) {
+          await tx.product.update({
+            where: { id: p.productId },
+            data: { stock: { decrement: p.quantity } },
+          });
+          await tx.stockLog.create({
+            data: { productId: p.productId, change: -p.quantity, reason: 'SALE_CRM', entryId: created.id },
+          });
+        }
       }
     }
 

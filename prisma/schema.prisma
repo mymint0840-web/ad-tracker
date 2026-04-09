@@ -24,6 +24,11 @@ enum Role {
   STAFF
 }
 
+enum EntryProductType {
+  PAGE
+  CRM
+}
+
 model AdAccount {
   id        Int      @id @default(autoincrement())
   name      String   @unique
@@ -113,14 +118,15 @@ model Entry {
 }
 
 model EntryProduct {
-  id        Int      @id @default(autoincrement())
+  id        Int              @id @default(autoincrement())
   entryId   Int
-  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entry     Entry            @relation(fields: [entryId], references: [id], onDelete: Cascade)
   productId Int
-  product   Product  @relation("EntryProducts", fields: [productId], references: [id])
-  quantity  Int      @default(0)
+  product   Product          @relation("EntryProducts", fields: [productId], references: [id])
+  quantity  Int              @default(0)
+  type      EntryProductType @default(PAGE)
 
-  @@unique([entryId, productId])
+  @@unique([entryId, productId, type])
   @@index([entryId])
   @@index([productId])
   @@map("entry_products")

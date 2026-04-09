@@ -46,7 +46,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     product: { id: entry.product.id, name: entry.product.name, cost: productCost },
     page: entry.page,
     crmProduct: entry.crmProduct ? { id: entry.crmProduct.id, name: entry.crmProduct.name, cost: decimalToNumber(entry.crmProduct.cost) } : null,
-    entryProducts: entry.entryProducts.map(ep => ({
+    entryProducts: entry.entryProducts.filter(ep => ep.type === 'PAGE').map(ep => ({
+      productId: ep.productId,
+      quantity: ep.quantity,
+      product: { id: ep.product.id, name: ep.product.name, cost: decimalToNumber(ep.product.cost) },
+    })),
+    crmProducts: entry.entryProducts.filter(ep => ep.type === 'CRM').map(ep => ({
       productId: ep.productId,
       quantity: ep.quantity,
       product: { id: ep.product.id, name: ep.product.name, cost: decimalToNumber(ep.product.cost) },
@@ -149,13 +154,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
 
-    // Create new EntryProduct records and deduct stock
+    // Create new PAGE EntryProduct records and deduct stock
     if (data.products && data.products.length > 0) {
       await tx.entryProduct.createMany({
         data: data.products.map(p => ({
           entryId,
           productId: p.productId,
           quantity: p.quantity,
+          type: 'PAGE' as const,
         })),
       });
 
@@ -172,7 +178,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     } else {
       // Fallback: deduct primary product stock
-      const newTotal = data.quantity + data.crmQty;
+      const newTotal = data.quantity + (data.crmProducts && data.crmProducts.length > 0 ? 0 : data.crmQty);
       if (product.stock < newTotal) {
         throw new Error(`สต๊อกไม่พอ (มี ${product.stock} ต้องการ ${newTotal})`);
       }
@@ -185,6 +191,30 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         await tx.stockLog.create({
           data: { productId: data.productId, change: -diff, reason: 'ENTRY_EDIT', entryId },
         });
+      }
+    }
+
+    // Create new CRM EntryProduct records and deduct stock
+    if (data.crmProducts && data.crmProducts.length > 0) {
+      await tx.entryProduct.createMany({
+        data: data.crmProducts.map(p => ({
+          entryId,
+          productId: p.productId,
+          quantity: p.quantity,
+          type: 'CRM' as const,
+        })),
+      });
+
+      for (const p of data.crmProducts) {
+        if (p.quantity > 0) {
+          await tx.product.update({
+            where: { id: p.productId },
+            data: { stock: { decrement: p.quantity } },
+          });
+          await tx.stockLog.create({
+            data: { productId: p.productId, change: -p.quantity, reason: 'ENTRY_EDIT_CRM', entryId },
+          });
+        }
       }
     }
 
