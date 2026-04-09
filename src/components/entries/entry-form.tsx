@@ -281,8 +281,9 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
             <FormField label="คนทัก" type="number" value={String(form.messages)} onChange={set('messages')} />
             <FormField label="ปิดได้" type="number" value={String(form.closed)} onChange={set('closed')} />
           </div>
-          <div className="grid grid-cols-1 gap-3 mb-3">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <FormField label="ยอดขาย (฿)" type="number" value={String(form.salesFromPage)} onChange={set('salesFromPage')} />
+            <FormField label="ออเดอร์" type="number" value={String(form.orders)} onChange={set('orders')} />
           </div>
 
           {/* สินค้า multi-product */}
