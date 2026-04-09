@@ -26,53 +26,36 @@ export function useEntries() {
     queryClient.invalidateQueries({ queryKey: ['products'] });
   };
 
+  const buildPayload = (formData: EntryFormData) => ({
+    date: formData.date,
+    accountId: Number(formData.accountId),
+    productId: Number(formData.productId),
+    adCost: Number(formData.adCost) || 0,
+    messages: Number(formData.messages) || 0,
+    closed: Number(formData.closed) || 0,
+    orders: Number(formData.orders) || 0,
+    salesFromPage: Number(formData.salesFromPage) || 0,
+    quantity: Number(formData.quantity) || 0,
+    crmSales: Number(formData.crmSales) || 0,
+    crmQty: Number(formData.crmQty) || 0,
+    shippingCost: Number(formData.shippingCost) || 0,
+    packingCost: Number(formData.packingCost) || 0,
+    adminCommission: Number(formData.adminCommission) || 0,
+    pageId: Number(formData.pageId) || undefined,
+    hotSales: Number(formData.hotSales) || 0,
+    crmOrders: Number(formData.crmOrders) || 0,
+    crmProductId: Number(formData.crmProductId) || undefined,
+    note: formData.note || '',
+    ...(formData.crmProducts?.length ? { crmProducts: formData.crmProducts } : {}),
+  });
+
   const addMutation = useMutation({
-    mutationFn: (formData: EntryFormData) => entriesAPI.create({
-      date: formData.date,
-      accountId: Number(formData.accountId),
-      productId: Number(formData.productId),
-      adCost: Number(formData.adCost) || 0,
-      messages: Number(formData.messages) || 0,
-      closed: Number(formData.closed) || 0,
-      orders: Number(formData.orders) || 0,
-      salesFromPage: Number(formData.salesFromPage) || 0,
-      quantity: Number(formData.quantity) || 0,
-      crmSales: Number(formData.crmSales) || 0,
-      crmQty: Number(formData.crmQty) || 0,
-      shippingCost: Number(formData.shippingCost) || 0,
-      packingCost: Number(formData.packingCost) || 0,
-      adminCommission: Number(formData.adminCommission) || 0,
-      pageId: Number(formData.pageId) || undefined,
-      hotSales: Number(formData.hotSales) || 0,
-      crmOrders: Number(formData.crmOrders) || 0,
-      crmProductId: Number(formData.crmProductId) || undefined,
-      note: formData.note || '',
-    }),
+    mutationFn: (formData: EntryFormData) => entriesAPI.create(buildPayload(formData)),
     onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: EntryFormData }) => entriesAPI.update(id, {
-      date: data.date,
-      accountId: Number(data.accountId),
-      productId: Number(data.productId),
-      adCost: Number(data.adCost) || 0,
-      messages: Number(data.messages) || 0,
-      closed: Number(data.closed) || 0,
-      orders: Number(data.orders) || 0,
-      salesFromPage: Number(data.salesFromPage) || 0,
-      quantity: Number(data.quantity) || 0,
-      crmSales: Number(data.crmSales) || 0,
-      crmQty: Number(data.crmQty) || 0,
-      shippingCost: Number(data.shippingCost) || 0,
-      packingCost: Number(data.packingCost) || 0,
-      adminCommission: Number(data.adminCommission) || 0,
-      pageId: Number(data.pageId) || undefined,
-      hotSales: Number(data.hotSales) || 0,
-      crmOrders: Number(data.crmOrders) || 0,
-      crmProductId: Number(data.crmProductId) || undefined,
-      note: data.note || '',
-    }),
+    mutationFn: ({ id, data }: { id: number; data: EntryFormData }) => entriesAPI.update(id, buildPayload(data)),
     onSuccess: invalidate,
   });
 
@@ -97,6 +80,8 @@ export function useEntries() {
     hotSales: Number(e.hotSales || e.hotSales) || 0,
     crmOrders: Number(e.crmOrders) || 0,
     product: e.product ? { ...e.product, cost: Number(e.product.cost), price: Number(e.product.price) } : e.product,
+    products: e.entryProducts || e.products || [],
+    crmProduct: e.crmProduct,
   }));
 
   const summary: DashboardSummary = summaryData ? {

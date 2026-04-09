@@ -120,8 +120,16 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
         shippingCost: entry.shippingCost, packingCost: entry.packingCost, adminCommission: entry.adminCommission,
         note: entry.note || '',
       });
-      setAdProducts([{ productId: entry.productId || '', quantity: entry.quantity || '' }]);
-      setCrmProducts([{ productId: entry.crmProductId || '', quantity: entry.crmQty || '' }]);
+      // Load multi-product rows from API response
+      const adRows = entry.products?.length
+        ? entry.products.map((p: any) => ({ productId: p.productId || '', quantity: p.quantity || '' }))
+        : [{ productId: entry.productId || '', quantity: entry.quantity || '' }];
+      setAdProducts(adRows);
+
+      const crmRows = (entry as any).crmProducts?.length
+        ? (entry as any).crmProducts.map((p: any) => ({ productId: p.productId || '', quantity: p.quantity || '' }))
+        : [{ productId: entry.crmProductId || '', quantity: entry.crmQty || '' }];
+      setCrmProducts(crmRows);
     } else {
       setForm(emptyForm);
       setAdProducts([{ productId: '', quantity: '' }]);
@@ -159,6 +167,13 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
   });
 
   const handleSave = () => {
+    const validAdProducts = adProducts
+      .filter(r => r.productId && r.quantity)
+      .map(r => ({ productId: Number(r.productId), quantity: Number(r.quantity) }));
+    const validCrmProducts = crmProducts
+      .filter(r => r.productId && r.quantity)
+      .map(r => ({ productId: Number(r.productId), quantity: Number(r.quantity) }));
+
     const data = {
       ...form,
       quantity: totalAdQty || form.quantity,
@@ -166,6 +181,8 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
       crmQty: totalCrmQty || form.crmQty,
       crmProductId: crmProducts[0]?.productId || form.crmProductId,
       hotSales: 0,
+      adProducts: validAdProducts,
+      crmProducts: validCrmProducts,
     };
     onSave(data as EntryFormData);
     onClose();

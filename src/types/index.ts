@@ -82,6 +82,9 @@ export interface EntryFormData {
   crmOrders: number | '';
   crmProductId: number | '';
   note: string;
+  // Multi-product arrays
+  adProducts?: { productId: number; quantity: number }[];
+  crmProducts?: { productId: number; quantity: number }[];
 }
 
 export interface DailyTarget {
