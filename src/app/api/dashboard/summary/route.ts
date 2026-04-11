@@ -3,8 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { calculateEntry } from '@/lib/calculations';
 import { decimalToNumber } from '@/lib/utils';
 import { getAuthUser } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   try {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -98,12 +100,17 @@ export async function GET(request: NextRequest) {
       costPerClick: decimalToNumber(target.costPerClick),
     } : { profit: 0, adPercent: 0, closeRate: 0, costPerClick: 0 },
   });
-  } catch {
-    // Return empty summary instead of 500 when filter has no data or DB error
-    return NextResponse.json({
-      totals: { adCost: 0, messages: 0, closed: 0, orders: 0, salesPage: 0, crmSales: 0, totalSales: 0, crmQty: 0, hotSales: 0, profitPage: 0, profitCRM: 0, profitTotal: 0 },
-      rates: { adPercent: null, closeRate: null, costPerClick: null, roas: null, aovPage: null, aovCRM: null, aovTotal: null },
-      targets: { profit: 0, adPercent: 0, closeRate: 0, costPerClick: 0 },
+  } catch (err) {
+    logger.error({
+      requestId,
+      method: 'GET',
+      path: '/api/dashboard/summary',
+      message: 'Failed to compute summary',
+      error: err instanceof Error ? err.message : String(err),
     });
+    return NextResponse.json(
+      { error: 'Failed to compute dashboard summary', requestId },
+      { status: 500 },
+    );
   }
 }

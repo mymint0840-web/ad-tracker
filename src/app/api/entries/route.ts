@@ -121,8 +121,10 @@ export async function GET(request: NextRequest) {
       message: 'Failed to fetch entries',
       error: err instanceof Error ? err.message : String(err),
     });
-    // Return empty data instead of 500 when filter has no results or DB error
-    return NextResponse.json({ data: [], pagination: { page: 1, limit: 50, total: 0 } });
+    return NextResponse.json(
+      { error: 'Failed to fetch entries', requestId },
+      { status: 500 },
+    );
   }
 }
 
