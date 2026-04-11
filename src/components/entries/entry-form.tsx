@@ -287,6 +287,14 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
             e.preventDefault();
           }
         }}
+        onFocusOutside={(e) => {
+          // Radix FocusScope pulls focus back into the dialog when it escapes
+          // the subtree, which blocks the portaled search input from ever
+          // receiving focus. Let focus stay when it lands inside our portal.
+          if ((e.target as HTMLElement).closest('[data-form-search-select-portal]')) {
+            e.preventDefault();
+          }
+        }}
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-extrabold text-white">{isNew ? '➕ เพิ่มข้อมูลใหม่' : '✏️ แก้ไขข้อมูล'}</DialogTitle>
