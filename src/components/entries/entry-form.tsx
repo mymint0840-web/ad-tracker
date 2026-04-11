@@ -76,6 +76,7 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
       {open && typeof document !== 'undefined' && createPortal(
         <div
           ref={dropRef}
+          data-form-search-select-portal
           className="fixed bg-[#1a1b2e] border border-white/[0.12] rounded-lg shadow-2xl overflow-hidden"
           style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 220), zIndex: 9999 }}
         >
@@ -271,7 +272,22 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-[820px] max-h-[92vh] overflow-y-auto bg-gradient-to-br from-[#1a1b2e] to-[#131424] border-white/[0.08] text-white">
+      <DialogContent
+        className="max-w-[820px] max-h-[92vh] overflow-y-auto bg-gradient-to-br from-[#1a1b2e] to-[#131424] border-white/[0.08] text-white"
+        onInteractOutside={(e) => {
+          // FormSearchSelect renders its menu via createPortal to document.body,
+          // which Radix Dialog treats as "outside". Without this guard the dialog
+          // closes the moment the user clicks an option or the search input.
+          if ((e.target as HTMLElement).closest('[data-form-search-select-portal]')) {
+            e.preventDefault();
+          }
+        }}
+        onPointerDownOutside={(e) => {
+          if ((e.target as HTMLElement).closest('[data-form-search-select-portal]')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-extrabold text-white">{isNew ? '➕ เพิ่มข้อมูลใหม่' : '✏️ แก้ไขข้อมูล'}</DialogTitle>
           <p className="text-sm text-white/60">กรอกข้อมูลด้านล่าง • คำนวณอัตโนมัติ</p>
