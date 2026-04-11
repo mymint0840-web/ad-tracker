@@ -30,11 +30,12 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+    const normalizedEmail = email.toLowerCase().trim();
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email: normalizedEmail, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -43,15 +44,25 @@ export default function RegisterPage() {
         return;
       }
 
-      const result = await signIn('credentials', { email, password, redirect: false });
-      setLoading(false);
-      if (result?.error) {
-        router.push('/login');
-      } else {
+      // Auto-signin with the same normalized email the API stored
+      const result = await signIn('credentials', {
+        email: normalizedEmail,
+        password,
+        redirect: false,
+      });
+
+      if (result?.ok && !result.error) {
         router.push('/');
         router.refresh();
+        return;
       }
+
+      // Auto-signin failed (e.g., NEXTAUTH_SECRET missing) — fall back to /login
+      // with a one-shot success flag so the login page can show a confirmation toast.
+      router.push('/login?registered=1');
     } catch {
+      // Network/fetch error — surface inline so the user knows what happened
+      // instead of staying silently on /register.
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
       setLoading(false);
     }

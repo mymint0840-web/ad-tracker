@@ -1,14 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justRegistered = searchParams.get('registered') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +30,7 @@ export default function LoginPage() {
     setError('');
 
     const result = await signIn('credentials', {
-      email,
+      email: email.toLowerCase().trim(),
       password,
       redirect: false,
     });
@@ -43,6 +53,12 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-white">Ad Performance Tracker</h1>
           <p className="text-sm text-zinc-500 mt-1">เข้าสู่ระบบเพื่อจัดการข้อมูล</p>
         </div>
+
+        {justRegistered && (
+          <div className="mb-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm px-4 py-3 rounded-xl">
+            สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1">
