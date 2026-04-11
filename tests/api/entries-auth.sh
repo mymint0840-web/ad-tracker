@@ -63,4 +63,19 @@ check "GET /api/accounts (anonymous)" "401" "$accounts_status"
 pages_status=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/api/pages")
 check "GET /api/pages (anonymous)" "401" "$pages_status"
 
+# P2 round — master-data mutation routes must reject anonymous (401).
+# STAFF→403 / ADMIN→200 role coverage needs an authenticated harness;
+# TESTER runs that separately. This script only verifies the anonymous gate
+# regression net, which is what GUARD re-checks against prod.
+for route in /api/products /api/accounts /api/pages; do
+  s=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$BASE_URL$route")
+  check "POST $route (anonymous)" "401" "$s"
+  s=$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' -d '{}' "$BASE_URL$route/1")
+  check "PUT $route/1 (anonymous)" "401" "$s"
+  s=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$BASE_URL$route/1")
+  check "DELETE $route/1 (anonymous)" "401" "$s"
+done
+targets_put_status=$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' -d '{}' "$BASE_URL/api/targets")
+check "PUT /api/targets (anonymous)" "401" "$targets_put_status"
+
 exit $fail
