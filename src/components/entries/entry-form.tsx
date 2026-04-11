@@ -77,7 +77,7 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
         <div
           ref={dropRef}
           data-form-search-select-portal
-          className="fixed bg-[#1a1b2e] border border-white/[0.12] rounded-lg shadow-2xl overflow-hidden"
+          className="fixed bg-[#1a1b2e] border border-white/[0.12] rounded-lg shadow-2xl overflow-hidden pointer-events-auto"
           style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 220), zIndex: 9999 }}
         >
           <div className="p-2 border-b border-white/[0.08]">
