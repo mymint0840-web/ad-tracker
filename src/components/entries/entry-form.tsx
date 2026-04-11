@@ -380,16 +380,16 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
         {/* ผลการยิงแอด */}
         <Section title="ผลการยิงแอด" color="rgba(251,191,36,0.8)">
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <FormField label="ค่าแอด (฿)" type="number" value={String(form.adCost)} onChange={set('adCost')} />
-            <FormField label="คนทัก" type="number" value={String(form.messages)} onChange={set('messages')} />
+            <FormField testid="entry-form-adcost-input" label="ค่าแอด (฿)" type="number" value={String(form.adCost)} onChange={set('adCost')} />
+            <FormField testid="entry-form-messages-input" label="คนทัก" type="number" value={String(form.messages)} onChange={set('messages')} />
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <FormField label="Impressions" type="number" value={String(form.impressions)} onChange={set('impressions')} />
-            <FormField label="Clicks" type="number" value={String(form.clicks)} onChange={set('clicks')} />
+            <FormField testid="entry-form-impressions-input" label="Impressions" type="number" value={String(form.impressions)} onChange={set('impressions')} />
+            <FormField testid="entry-form-clicks-input" label="Clicks" type="number" value={String(form.clicks)} onChange={set('clicks')} />
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <FormField label="ยอดขาย (฿)" type="number" value={String(form.salesFromPage)} onChange={set('salesFromPage')} />
-            <FormField label="ออเดอร์" type="number" value={String(form.orders)} onChange={set('orders')} />
+            <FormField testid="entry-form-sales-input" label="ยอดขาย (฿)" type="number" value={String(form.salesFromPage)} onChange={set('salesFromPage')} />
+            <FormField testid="entry-form-orders-input" label="ออเดอร์" type="number" value={String(form.orders)} onChange={set('orders')} />
           </div>
 
           {/* สินค้า multi-product */}
@@ -522,21 +522,24 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
 
         {/* คำนวณอัตโนมัติ */}
         <Section title="📊 คำนวณอัตโนมัติ" color="rgba(167,139,250,0.8)">
-          <div className="grid grid-cols-3 gap-3 bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]">
+          <div
+            data-testid="entry-form-summary"
+            className="grid grid-cols-3 gap-3 bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]"
+          >
             {[
-              { label: 'Total Spend', val: `${fmt(Number(form.adCost) || 0)} ฿`, color: '#fbbf24' },
-              { label: 'Revenue', val: `${fmt((Number(form.salesFromPage) || 0) + (Number(form.hotSales) || 0) + (Number(form.crmSales) || 0))} ฿`, color: '#34d399' },
-              { label: '%ค่าแอด', val: fmtP(calc.adPercent), color: '#fbbf24' },
-              { label: '%ปิดการขาย', val: fmtP(calc.closeRate), color: '#818cf8' },
-              { label: 'ค่าคลิก/ทัก', val: calc.costPerClick != null ? `${fmt(calc.costPerClick)} ฿` : '-', color: '#f472b6' },
-              { label: 'ROAS', val: fmtR(calc.roas), color: '#a78bfa' },
-              { label: 'CTR', val: fmtP(calc.ctr), color: '#22d3ee' },
-              { label: 'CPM', val: calc.cpm != null ? `${fmt(calc.cpm)} ฿` : '-', color: '#22d3ee' },
-              { label: 'กำไรเพจ', val: `${fmt(calc.profitPage)} ฿`, color: calc.profitPage >= 0 ? '#34d399' : '#f87171' },
-              { label: 'กำไร CRM', val: `${fmt(calc.profitCRM)} ฿`, color: calc.profitCRM >= 0 ? '#34d399' : '#f87171' },
-              { label: 'กำไรรวม', val: `${fmt(calc.profitTotal)} ฿`, color: calc.profitTotal >= 0 ? '#34d399' : '#f87171' },
+              { label: 'Total Spend', testid: 'entry-form-total-spend-tile', val: `${fmt(Number(form.adCost) || 0)} ฿`, color: '#fbbf24' },
+              { label: 'Revenue', testid: 'entry-form-revenue-tile', val: `${fmt((Number(form.salesFromPage) || 0) + (Number(form.hotSales) || 0) + (Number(form.crmSales) || 0))} ฿`, color: '#34d399' },
+              { label: '%ค่าแอด', testid: 'entry-form-ad-percent-tile', val: fmtP(calc.adPercent), color: '#fbbf24' },
+              { label: '%ปิดการขาย', testid: 'entry-form-close-rate-tile', val: fmtP(calc.closeRate), color: '#818cf8' },
+              { label: 'ค่าคลิก/ทัก', testid: 'entry-form-cost-per-click-tile', val: calc.costPerClick != null ? `${fmt(calc.costPerClick)} ฿` : '-', color: '#f472b6' },
+              { label: 'ROAS', testid: 'entry-form-roas-tile', val: fmtR(calc.roas), color: '#a78bfa' },
+              { label: 'CTR', testid: 'entry-form-ctr-tile', val: fmtP(calc.ctr), color: '#22d3ee' },
+              { label: 'CPM', testid: 'entry-form-cpm-tile', val: calc.cpm != null ? `${fmt(calc.cpm)} ฿` : '-', color: '#22d3ee' },
+              { label: 'กำไรเพจ', testid: 'entry-form-profit-page-tile', val: `${fmt(calc.profitPage)} ฿`, color: calc.profitPage >= 0 ? '#34d399' : '#f87171' },
+              { label: 'กำไร CRM', testid: 'entry-form-profit-crm-tile', val: `${fmt(calc.profitCRM)} ฿`, color: calc.profitCRM >= 0 ? '#34d399' : '#f87171' },
+              { label: 'กำไรรวม', testid: 'entry-form-profit-total-tile', val: `${fmt(calc.profitTotal)} ฿`, color: calc.profitTotal >= 0 ? '#34d399' : '#f87171' },
             ].map(s => (
-              <div key={s.label} className="text-center py-2">
+              <div key={s.label} data-testid={s.testid} className="text-center py-2">
                 <div className="text-xs text-white/60 mb-1.5">{s.label}</div>
                 <div className="text-xl font-extrabold font-mono" style={{ color: s.color }}>{s.val}</div>
               </div>
@@ -572,11 +575,30 @@ function Section({ title, color, children }: { title: string; color: string; chi
   );
 }
 
-function FormField({ label, type = 'text', value, onChange }: { label: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+function FormField({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  testid,
+}: {
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  testid?: string;
+}) {
   return (
     <div className="space-y-1">
       <label className="text-[13px] text-white/70 font-semibold">{label}</label>
-      <Input type={type} value={value} onChange={onChange} placeholder="0" className="bg-white/[0.06] border-white/[0.1] text-white font-mono rounded-xl h-10" />
+      <Input
+        data-testid={testid}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder="0"
+        className="bg-white/[0.06] border-white/[0.1] text-white font-mono rounded-xl h-10"
+      />
     </div>
   );
 }

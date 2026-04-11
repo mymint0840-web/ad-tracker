@@ -46,7 +46,10 @@ function LoginPageInner() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0d0e1a] p-4">
+    <div
+      data-testid="login-page"
+      className="min-h-screen flex items-center justify-center bg-[#0d0e1a] p-4"
+    >
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">📊</div>
@@ -55,15 +58,23 @@ function LoginPageInner() {
         </div>
 
         {justRegistered && (
-          <div className="mb-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm px-4 py-3 rounded-xl">
+          <div
+            data-testid="login-registered-toast"
+            className="mb-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm px-4 py-3 rounded-xl"
+          >
             สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form
+          data-testid="login-form"
+          onSubmit={handleLogin}
+          className="space-y-4"
+        >
           <div className="space-y-1">
             <label className="text-sm text-zinc-400">อีเมล</label>
             <Input
+              data-testid="login-email-input"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -75,6 +86,7 @@ function LoginPageInner() {
           <div className="space-y-1">
             <label className="text-sm text-zinc-400">รหัสผ่าน</label>
             <Input
+              data-testid="login-password-input"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -85,12 +97,16 @@ function LoginPageInner() {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl">
+            <div
+              data-testid="login-error"
+              className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl"
+            >
               {error}
             </div>
           )}
 
           <Button
+            data-testid="login-submit-button"
             type="submit"
             disabled={loading}
             className="w-full h-11 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-xl"

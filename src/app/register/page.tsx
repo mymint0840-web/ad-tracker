@@ -69,7 +69,10 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0d0e1a] p-4">
+    <div
+      data-testid="register-page"
+      className="min-h-screen flex items-center justify-center bg-[#0d0e1a] p-4"
+    >
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">📊</div>
@@ -77,10 +80,15 @@ export default function RegisterPage() {
           <p className="text-sm text-zinc-500 mt-1">สร้างบัญชีเพื่อเริ่มใช้งาน</p>
         </div>
 
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form
+          data-testid="register-form"
+          onSubmit={handleRegister}
+          className="space-y-4"
+        >
           <div className="space-y-1">
             <label className="text-sm text-zinc-400">ชื่อ</label>
             <Input
+              data-testid="register-name-input"
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
@@ -92,6 +100,7 @@ export default function RegisterPage() {
           <div className="space-y-1">
             <label className="text-sm text-zinc-400">อีเมล</label>
             <Input
+              data-testid="register-email-input"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -103,6 +112,7 @@ export default function RegisterPage() {
           <div className="space-y-1">
             <label className="text-sm text-zinc-400">รหัสผ่าน</label>
             <Input
+              data-testid="register-password-input"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -115,6 +125,7 @@ export default function RegisterPage() {
           <div className="space-y-1">
             <label className="text-sm text-zinc-400">ยืนยันรหัสผ่าน</label>
             <Input
+              data-testid="register-confirm-input"
               type="password"
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
@@ -126,12 +137,16 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl">
+            <div
+              data-testid="register-error"
+              className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl"
+            >
               {error}
             </div>
           )}
 
           <Button
+            data-testid="register-submit-button"
             type="submit"
             disabled={loading}
             className="w-full h-11 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-xl"
