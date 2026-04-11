@@ -155,6 +155,7 @@ const emptyForm: EntryFormData = {
   salesFromPage: '', hotSales: '', quantity: '',
   crmSales: '', crmQty: '', crmOrders: '', crmProductId: '',
   shippingCost: '', packingCost: '', adminCommission: '',
+  impressions: '', clicks: '',
   note: '',
 };
 
@@ -175,6 +176,7 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
         salesFromPage: entry.salesFromPage, hotSales: entry.hotSales || '', quantity: entry.quantity,
         crmSales: entry.crmSales, crmQty: entry.crmQty, crmOrders: entry.crmOrders || '', crmProductId: entry.crmProductId || '',
         shippingCost: entry.shippingCost, packingCost: entry.packingCost, adminCommission: entry.adminCommission,
+        impressions: (entry as any).impressions ?? '', clicks: (entry as any).clicks ?? '',
         note: entry.note || '',
       });
       // Load multi-product rows from API response
@@ -227,6 +229,8 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
     packingCost: Number(form.packingCost) || 0,
     adminCommission: Number(form.adminCommission) || 0,
     productCost: prod?.cost || 0,
+    impressions: form.impressions === '' ? null : Number(form.impressions),
+    clicks: form.clicks === '' ? null : Number(form.clicks),
   });
 
   const handleSave = async () => {
@@ -380,6 +384,10 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
             <FormField label="คนทัก" type="number" value={String(form.messages)} onChange={set('messages')} />
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
+            <FormField label="Impressions" type="number" value={String(form.impressions)} onChange={set('impressions')} />
+            <FormField label="Clicks" type="number" value={String(form.clicks)} onChange={set('clicks')} />
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <FormField label="ยอดขาย (฿)" type="number" value={String(form.salesFromPage)} onChange={set('salesFromPage')} />
             <FormField label="ออเดอร์" type="number" value={String(form.orders)} onChange={set('orders')} />
           </div>
@@ -522,6 +530,8 @@ export function EntryForm({ open, onClose, onSave, entry, products, accounts, pa
               { label: '%ปิดการขาย', val: fmtP(calc.closeRate), color: '#818cf8' },
               { label: 'ค่าคลิก/ทัก', val: calc.costPerClick != null ? `${fmt(calc.costPerClick)} ฿` : '-', color: '#f472b6' },
               { label: 'ROAS', val: fmtR(calc.roas), color: '#a78bfa' },
+              { label: 'CTR', val: fmtP(calc.ctr), color: '#22d3ee' },
+              { label: 'CPM', val: calc.cpm != null ? `${fmt(calc.cpm)} ฿` : '-', color: '#22d3ee' },
               { label: 'กำไรเพจ', val: `${fmt(calc.profitPage)} ฿`, color: calc.profitPage >= 0 ? '#34d399' : '#f87171' },
               { label: 'กำไร CRM', val: `${fmt(calc.profitCRM)} ฿`, color: calc.profitCRM >= 0 ? '#34d399' : '#f87171' },
               { label: 'กำไรรวม', val: `${fmt(calc.profitTotal)} ฿`, color: calc.profitTotal >= 0 ? '#34d399' : '#f87171' },

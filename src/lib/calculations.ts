@@ -15,6 +15,8 @@ interface EntryData {
   productCost: number;
   hotSales: number;
   crmOrders: number;
+  impressions?: number | null;
+  clicks?: number | null;
 }
 
 export function calculateEntry(data: EntryData): CalcResult {
@@ -33,5 +35,9 @@ export function calculateEntry(data: EntryData): CalcResult {
   const aovCRM = data.crmQty > 0 ? data.crmSales / data.crmQty : null;
   const totalOrders = data.closed + data.crmQty;
   const aovTotal = totalOrders > 0 ? totalSales / totalOrders : null;
-  return { totalSales, totalSalesAll, hotSales: data.hotSales, totalSpend, revenue: totalSales, profitPage, profitCRM, profitTotal, adPercent, closeRate, costPerClick, roas, aovPage, aovCRM, aovTotal };
+  const impressions = data.impressions ?? null;
+  const clicks = data.clicks ?? null;
+  const ctr = impressions && impressions > 0 && clicks != null ? (clicks / impressions) * 100 : null;
+  const cpm = impressions && impressions > 0 ? (data.adCost / impressions) * 1000 : null;
+  return { totalSales, totalSalesAll, hotSales: data.hotSales, totalSpend, revenue: totalSales, profitPage, profitCRM, profitTotal, adPercent, closeRate, costPerClick, roas, aovPage, aovCRM, aovTotal, ctr, cpm };
 }

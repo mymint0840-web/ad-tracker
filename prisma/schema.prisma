@@ -89,6 +89,8 @@ model Entry {
   messages        Int      @default(0)
   closed          Int      @default(0)
   orders          Int      @default(0)
+  impressions     Int?
+  clicks          Int?
 
   salesFromPage   Decimal  @db.Decimal(12, 2) @default(0)
   quantity        Int      @default(0)

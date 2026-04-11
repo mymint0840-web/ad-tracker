@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -82,7 +83,14 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-center text-xs text-zinc-600 mt-6">
+        <p className="text-center text-sm text-zinc-500 mt-6">
+          ยังไม่มีบัญชี?{' '}
+          <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold">
+            สมัครสมาชิก
+          </Link>
+        </p>
+
+        <p className="text-center text-xs text-zinc-600 mt-3">
           Ad Performance Tracker v1.0
         </p>
       </div>

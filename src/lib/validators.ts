@@ -19,6 +19,8 @@ export const entrySchema = z.object({
   shippingCost: z.number().min(0).default(0),
   packingCost: z.number().min(0).default(0),
   adminCommission: z.number().min(0).default(0),
+  impressions: z.number().int().min(0).nullable().optional(),
+  clicks: z.number().int().min(0).nullable().optional(),
   products: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().min(0) })).optional(),
   crmProducts: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().min(0) })).optional(),
   note: z.string().optional(),

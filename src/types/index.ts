@@ -81,6 +81,8 @@ export interface EntryFormData {
   hotSales: number | '';
   crmOrders: number | '';
   crmProductId: number | '';
+  impressions: number | '';
+  clicks: number | '';
   note: string;
   // Multi-product arrays
   adProducts?: { productId: number; quantity: number }[];
@@ -126,4 +128,6 @@ export interface CalcResult {
   aovPage: number | null;
   aovCRM: number | null;
   aovTotal: number | null;
+  ctr: number | null;
+  cpm: number | null;
 }

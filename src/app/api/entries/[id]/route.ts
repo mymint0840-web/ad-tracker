@@ -37,6 +37,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     packingCost: decimalToNumber(entry.packingCost),
     adminCommission: decimalToNumber(entry.adminCommission),
     productCost,
+    impressions: entry.impressions,
+    clicks: entry.clicks,
   });
 
   return NextResponse.json({
@@ -69,6 +71,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     shippingCost: decimalToNumber(entry.shippingCost),
     packingCost: decimalToNumber(entry.packingCost),
     adminCommission: decimalToNumber(entry.adminCommission),
+    impressions: entry.impressions,
+    clicks: entry.clicks,
     note: entry.note,
     calculated,
   });
@@ -145,6 +149,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         shippingCost: data.shippingCost,
         packingCost: data.packingCost,
         adminCommission: data.adminCommission,
+        impressions: data.impressions ?? null,
+        clicks: data.clicks ?? null,
         note: data.note,
       },
       include: {
