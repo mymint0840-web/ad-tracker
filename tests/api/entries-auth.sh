@@ -53,4 +53,14 @@ check "PUT /api/entries/1 (anonymous)" "401" "$put_status"
 del_status=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$BASE_URL/api/entries/1")
 check "DELETE /api/entries/1 (anonymous)" "401" "$del_status"
 
+# P1 round — competitive intel surfaces (audit 2026-04-11)
+targets_status=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/api/targets")
+check "GET /api/targets (anonymous)" "401" "$targets_status"
+
+accounts_status=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/api/accounts")
+check "GET /api/accounts (anonymous)" "401" "$accounts_status"
+
+pages_status=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/api/pages")
+check "GET /api/pages (anonymous)" "401" "$pages_status"
+
 exit $fail

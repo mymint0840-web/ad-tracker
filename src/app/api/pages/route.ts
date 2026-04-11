@@ -8,6 +8,9 @@ const pageSchema = z.object({
 });
 
 export async function GET() {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const pages = await prisma.page.findMany({
     where: { isActive: true },
     orderBy: { name: 'asc' },
