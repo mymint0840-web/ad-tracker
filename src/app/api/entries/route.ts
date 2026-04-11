@@ -1,4 +1,3 @@
-// @ts-nocheck — pending Prisma migration for new fields
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calculateEntry } from '@/lib/calculations';

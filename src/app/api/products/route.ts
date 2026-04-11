@@ -5,6 +5,9 @@ import { decimalToNumber } from '@/lib/utils';
 import { getAuthUser } from '@/lib/auth';
 
 export async function GET() {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const products = await prisma.product.findMany({
     where: { isActive: true },
     orderBy: { name: 'asc' },

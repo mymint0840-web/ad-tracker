@@ -1,13 +1,16 @@
-// @ts-nocheck — pending Prisma migration for new fields
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calculateEntry } from '@/lib/calculations';
 import { decimalToNumber } from '@/lib/utils';
+import { getAuthUser } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const searchParams = request.nextUrl.searchParams;
-  const where: any = {};
+  const where: Record<string, unknown> = {};
 
   const date = searchParams.get('date');
   const accountId = searchParams.get('accountId');
@@ -18,6 +21,8 @@ export async function GET(request: NextRequest) {
   if (accountId && !isNaN(Number(accountId))) where.accountId = Number(accountId);
   if (productId && !isNaN(Number(productId))) where.productId = Number(productId);
   if (pageId && !isNaN(Number(pageId))) where.pageId = Number(pageId);
+  // STAFF can only see their own entries; ADMIN sees all
+  if (user.role !== 'ADMIN') where.createdById = user.id;
 
   const entries = await prisma.entry.findMany({
     where,

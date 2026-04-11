@@ -1,4 +1,3 @@
-// @ts-nocheck — pending Prisma migration for new fields
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calculateEntry } from '@/lib/calculations';
@@ -94,6 +93,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const existing = await prisma.entry.findUnique({ where: { id: entryId } });
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // STAFF can only update their own entries; return 404 to avoid leaking existence
+  if (user.role !== 'ADMIN' && existing.createdById !== user.id) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   const body = await request.json();
   const parsed = entrySchema.safeParse(body);
@@ -248,6 +251,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
   const existing = await prisma.entry.findUnique({ where: { id: entryId } });
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // STAFF can only delete their own entries; return 404 to avoid leaking existence
+  // (also prevents silent inventory undo via stock-restore tx)
+  if (user.role !== 'ADMIN' && existing.createdById !== user.id) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   await prisma.$transaction(async (tx) => {
     // Restore stock
