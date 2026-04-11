@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Regression test for /api/entries auth gate.
 # Past incident: GET /api/entries was public — leaked all entries to anonymous callers.
-# This script must report PASS for both list and detail endpoints.
+# This script must report PASS for all listed endpoints.
+#
+# TEST DATA POLICY: this script is STATELESS — every check is a curl that
+# expects 401/400 from secured endpoints. NO test users or entries are written
+# to the DB by this script. The Playwright sidecar smokes in
+# mac-tester/ad-tracker-*.mjs handle stateful flows with try/finally cleanup.
 #
 # Usage:
 #   BASE_URL=https://your-app.up.railway.app ./tests/api/entries-auth.sh
