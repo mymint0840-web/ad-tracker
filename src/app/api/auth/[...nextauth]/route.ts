@@ -18,7 +18,9 @@ const handler = NextAuth({
           where: { email: credentials.email },
         });
 
-        if (!user) return null;
+        // Reject missing users AND soft-deleted users with the same generic
+        // failure mode as a wrong password (do not leak which case happened).
+        if (!user || user.deletedAt) return null;
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;

@@ -7,8 +7,10 @@ export async function getAuthUser() {
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, email: true, role: true, deletedAt: true },
   });
 
-  return user;
+  // Soft-deleted users keep valid JWTs but cannot make authenticated requests
+  if (!user || user.deletedAt) return null;
+  return { id: user.id, name: user.name, email: user.email, role: user.role };
 }
