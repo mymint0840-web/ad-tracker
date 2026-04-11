@@ -7,6 +7,9 @@ import { decimalToNumber } from '@/lib/utils';
 import { getAuthUser } from '@/lib/auth';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { id } = await params;
   const entry = await prisma.entry.findUnique({
     where: { id: Number(id) },
@@ -20,6 +23,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   });
 
   if (!entry) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // STAFF can only read their own entries; return 404 (not 403) to avoid leaking existence
+  if (user.role !== 'ADMIN' && entry.createdById !== user.id) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   const productCost = decimalToNumber(entry.product.cost);
   const calculated = calculateEntry({

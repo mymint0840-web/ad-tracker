@@ -10,6 +10,9 @@ import { logger } from '@/lib/logger';
 export async function GET(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   try {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const searchParams = request.nextUrl.searchParams;
   const filterResult = filterSchema.safeParse({
     date: searchParams.get('date') ?? undefined,
@@ -29,6 +32,8 @@ export async function GET(request: NextRequest) {
   if (filters.accountId) where.accountId = filters.accountId;
   if (filters.productId) where.productId = filters.productId;
   if (filters.pageId) where.pageId = filters.pageId;
+  // STAFF can only see their own entries; ADMIN sees all
+  if (user.role !== 'ADMIN') where.createdById = user.id;
 
   const [entries, total] = await Promise.all([
     prisma.entry.findMany({
