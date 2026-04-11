@@ -27,7 +27,20 @@ interface ProductRow {
   quantity: number | '';
 }
 
-// Searchable dropdown — uses fixed positioning + portal to escape Dialog overflow clipping
+// Searchable dropdown — split render tree so the search input stays INSIDE
+// the Dialog's Radix FocusScope while the options list portals out to escape
+// DialogContent's overflow-clipping + transform-created containing block.
+//
+// Why split:
+//   - Radix FocusScope (part of DialogContent) synchronously refocuses the
+//     dialog whenever focus leaves its DOM subtree. A portaled <input> never
+//     gets a chance to hold focus. onFocusOutside does not prevent this —
+//     FocusScope is a separate primitive from outside-interaction detection.
+//   - But the options list still needs to escape the dialog's overflow-y:auto
+//     + transform containing block, otherwise long menus clip.
+//
+// TODO (hygiene): replace this with @base-ui/react Combobox (already in deps)
+// so we stop fighting Radix Dialog primitives. Tracked in repo TODO.md.
 function FormSearchSelect({ value, onChange, options, placeholder }: {
   value: string;
   onChange: (v: string) => void;
@@ -38,11 +51,16 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
   const [search, setSearch] = useState('');
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
+  const inlineRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
   const updatePos = useCallback(() => {
-    if (btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
+    // Prefer measuring from the inline search wrapper so the options list sits
+    // visually flush under it. Fall back to the trigger button on first render
+    // before the inline wrapper has mounted.
+    const anchor = inlineRef.current ?? btnRef.current;
+    if (anchor) {
+      const r = anchor.getBoundingClientRect();
       setPos({ top: r.bottom + 4, left: r.left, width: r.width });
     }
   }, []);
@@ -52,7 +70,13 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
     updatePos();
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (btnRef.current?.contains(target) || dropRef.current?.contains(target)) return;
+      if (
+        btnRef.current?.contains(target) ||
+        inlineRef.current?.contains(target) ||
+        dropRef.current?.contains(target)
+      ) {
+        return;
+      }
       setOpen(false);
     };
     document.addEventListener('mousedown', handler);
@@ -73,14 +97,13 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
         <span className="truncate flex-1 text-left text-white/90">{selected?.label || <span className="text-white/40">{placeholder}</span>}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-white/50 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && typeof document !== 'undefined' && createPortal(
-        <div
-          ref={dropRef}
-          data-form-search-select-portal
-          className="fixed bg-[#1a1b2e] border border-white/[0.12] rounded-lg shadow-2xl overflow-hidden pointer-events-auto"
-          style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 220), zIndex: 9999 }}
-        >
-          <div className="p-2 border-b border-white/[0.08]">
+      {open && (
+        <>
+          {/* Inline search input — stays inside Radix FocusScope so it can hold focus. */}
+          <div
+            ref={inlineRef}
+            className="mt-1 p-2 rounded-lg bg-[#1a1b2e] border border-white/[0.12]"
+          >
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
               <input
@@ -93,23 +116,33 @@ function FormSearchSelect({ value, onChange, options, placeholder }: {
               />
             </div>
           </div>
-          <div className="max-h-48 overflow-y-auto">
-            {filtered.map(o => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => { onChange(o.value); setOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                  o.value === value ? 'bg-indigo-500/20 text-indigo-300 font-medium' : 'text-white/80 hover:bg-white/[0.06] hover:text-white'
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
-            {filtered.length === 0 && <div className="px-3 py-3 text-center text-xs text-white/40">ไม่พบ</div>}
-          </div>
-        </div>,
-        document.body
+          {/* Options list — portaled to escape DialogContent overflow + transform. */}
+          {typeof document !== 'undefined' && createPortal(
+            <div
+              ref={dropRef}
+              data-form-search-select-portal
+              className="fixed bg-[#1a1b2e] border border-white/[0.12] rounded-lg shadow-2xl overflow-hidden pointer-events-auto"
+              style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 220), zIndex: 9999 }}
+            >
+              <div className="max-h-48 overflow-y-auto">
+                {filtered.map(o => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => { onChange(o.value); setOpen(false); }}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      o.value === value ? 'bg-indigo-500/20 text-indigo-300 font-medium' : 'text-white/80 hover:bg-white/[0.06] hover:text-white'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+                {filtered.length === 0 && <div className="px-3 py-3 text-center text-xs text-white/40">ไม่พบ</div>}
+              </div>
+            </div>,
+            document.body
+          )}
+        </>
       )}
     </div>
   );
